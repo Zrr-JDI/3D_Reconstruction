@@ -1,0 +1,15 @@
+# 忽略 Visual Studio 的临时文件和设置目录
+.vs/
+
+# 忽略编译输出目录
+[Bb]in/
+[Oo]bj/
+[Bb]uild/
+
+# 忽略 OpenCV 的构建结果（根据你的路径具体指定）
+ThirdPart/OpenCV/build/
+
+# 忽略所有 .pdb 文件（调试符号文件）
+*.pdb
+
+# *.dll
