@@ -202,6 +202,11 @@ int main()
         }
     }
 
+    if (SimpleBundleAdjustAfterPnP(points3D, projections2D_all, Ks, Rs, ts) == false)
+    {
+        return -1;
+    }
+
     Export_To_NVM(imageNames, Rs, ts, Ks, points3D, projections2D_all, viewIndices, images);
 
     //表面重建部分
