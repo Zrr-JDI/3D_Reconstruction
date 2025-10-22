@@ -111,11 +111,96 @@ bool IncreaseCloud(std::vector<std::vector<int>>& point3DIds,std::vector<std::ve
 }
 
 
-
-bool Bundle_Adjustment(std::vector<std::vector<cv::Point2d>>& projections2D_all, std::vector<cv::Point3d>& points3D,const std::vector<cv::Mat>& Ks,const std::vector<cv::Mat>& Rs,const std::vector<cv::Mat>& ts)
+// 简化版 Bundle Adjustment
+bool SimpleBundleAdjustAfterPnP(
+    std::vector<cv::Point3d>& points3D,
+    const std::vector<std::vector<cv::Point2d>>& projections2D_all,
+    const std::vector<cv::Mat>& Ks,
+    std::vector<cv::Mat>& Rs,
+    std::vector<cv::Mat>& ts,
+    int iterations = 5
+)
 {
-	cv::sfm::bundleAdjust(points3D, projections2D_all, Ks, Rs, ts);
+    int numCams = Rs.size();
+    int numPoints = points3D.size();
+    bool updated = false; // 是否至少更新过一次
+
+    // -------- 只更新位姿，不更新点 --------
+    for (int iter = 0; iter < iterations; ++iter) {
+        for (int camIdx = 0; camIdx < numCams; ++camIdx) {
+            std::vector<cv::Point3d> visiblePoints;
+            std::vector<cv::Point2d> imagePoints;
+
+            for (int ptIdx = 0; ptIdx < numPoints; ++ptIdx) {
+                if (ptIdx >= projections2D_all[camIdx].size()) continue;
+                cv::Point2d uv = projections2D_all[camIdx][ptIdx];
+                if (uv.x >= 0 && uv.y >= 0) {
+                    visiblePoints.push_back(points3D[ptIdx]);
+                    imagePoints.push_back(uv);
+                }
+            }
+
+            if (visiblePoints.size() < 4) continue;
+
+            cv::Mat rvec, tvec;
+            cv::Rodrigues(Rs[camIdx], rvec);
+            tvec = ts[camIdx];
+
+            bool ok = cv::solvePnP(
+                visiblePoints,
+                imagePoints,
+                Ks[camIdx],
+                cv::Mat(),
+                rvec,
+                tvec,
+                true,
+                cv::SOLVEPNP_ITERATIVE
+            );
+
+            if (!ok) continue;
+
+            cv::Rodrigues(rvec, Rs[camIdx]);
+            ts[camIdx] = tvec;
+            updated = true;
+        }
+    }
+
+    if (!updated) return false; // 如果没有相机更新，返回false
+
+    // -------- 最后统一更新点云 --------
+    for (int ptIdx = 0; ptIdx < numPoints; ++ptIdx) {
+        cv::Point3d& P = points3D[ptIdx];
+        cv::Point3d delta(0, 0, 0);
+        int count = 0;
+
+        for (int camIdx = 0; camIdx < numCams; ++camIdx) {
+            if (ptIdx >= projections2D_all[camIdx].size()) continue;
+            cv::Point2d uv = projections2D_all[camIdx][ptIdx];
+            if (uv.x < 0 || uv.y < 0) continue;
+
+            cv::Mat R = Rs[camIdx];
+            cv::Mat t = ts[camIdx];
+            cv::Mat X = (cv::Mat_<double>(3, 1) << P.x, P.y, P.z);
+            cv::Mat proj = Ks[camIdx] * (R * X + t);
+            proj /= proj.at<double>(2);
+
+            cv::Point2d error(uv.x - proj.at<double>(0), uv.y - proj.at<double>(1));
+            delta.x += 0.001 * error.x;
+            delta.y += 0.001 * error.y;
+            delta.z += 0.001 * ((uv.x + uv.y) / 2 - proj.at<double>(0) / 2); // 简单微调 z
+            count++;
+        }
+
+        if (count > 0) {
+            P.x += delta.x / count;
+            P.y += delta.y / count;
+            P.z += delta.z / count;
+        }
+    }
+
+    return true; // 成功执行
 }
+
 
 
 // 辅助函数：旋转矩阵 -> 四元数 (qw, qx, qy, qz)
