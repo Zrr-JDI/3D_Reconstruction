@@ -118,7 +118,7 @@ bool SimpleBundleAdjustAfterPnP(
     const std::vector<cv::Mat>& Ks,
     std::vector<cv::Mat>& Rs,
     std::vector<cv::Mat>& ts,
-    int iterations = 5
+    int iterations
 )
 {
     int numCams = Rs.size();
@@ -206,7 +206,7 @@ bool SimpleBundleAdjustAfterPnP(
 // 辅助函数：旋转矩阵 -> 四元数 (qw, qx, qy, qz)
 cv::Vec4d rotationMatrixToQuaternion(const cv::Mat& R)
 {
-    CV_Assert(R.rows == 3 && R.cols == 3);
+    CV_Assert(R.rows == 3 && R.cols == 3 && R.type() == CV_64F);
     cv::Vec4d q;
     double trace = R.at<double>(0, 0) + R.at<double>(1, 1) + R.at<double>(2, 2);
     if (trace > 0) {
@@ -245,59 +245,76 @@ cv::Vec4d rotationMatrixToQuaternion(const cv::Mat& R)
 // 导出为 VisualSFM 格式的 NVM 文件
 void Export_To_NVM(
     const std::vector<std::string>& imageNames,                   // 每张图片文件名（与真实图片路径一致）
-    const std::vector<cv::Mat>& Rs,                               // 每张相机的旋转矩阵 (3x3)
-    const std::vector<cv::Mat>& ts,                               // 每张相机的平移向量 (3x1)
-    const std::vector<cv::Mat>& Ks,                               // 每张相机的内参矩阵 (3x3)
-    const std::vector<cv::Point3d>& points3D,                     // 全局三维点坐标（世界坐标系）
+    const std::vector<cv::Mat>& Rs,                              // 每张相机的旋转矩阵 (3x3)
+    const std::vector<cv::Mat>& ts,                              // 每张相机的平移向量 (3x1)
+    const std::vector<cv::Mat>& Ks,                              // 每张相机的内参矩阵 (3x3)
+    const std::vector<cv::Point3d>& points3D,                    // 全局三维点坐标（世界坐标系）
     const std::vector<std::vector<cv::Point2d>>& projections2D_all, // 每个相机上所有三维点的二维投影坐标
-    const std::vector<std::vector<int>>& viewIndices,             // 每个3D点在哪些相机中被观测到（相机索引）
-    const std::vector<cv::Mat>& images                            // 对应的原始图像（用于提取颜色）
+    const std::vector<std::vector<int>>& viewIndices,            // 每个3D点在哪些相机中被观测到（相机索引）
+    const std::vector<cv::Mat>& images                           // 对应的原始图像（用于提取颜色）
 ) {
-    std::ofstream file("scene.nvm");
+    std::ofstream file("MVS/scene.nvm");
     if (!file.is_open()) {
         std::cerr << "无法打开输出文件 scene.nvm" << std::endl;
         return;
     }
 
+    // 写入 NVM 头部
     file << "NVM_V3\n\n";
 
     // 写入相机信息
     file << imageNames.size() << "\n";
-
     for (size_t i = 0; i < imageNames.size(); ++i) {
+        // 验证输入数据
+        if (Rs[i].rows != 3 || Rs[i].cols != 3 || Rs[i].type() != CV_64F ||
+            ts[i].rows != 3 || ts[i].cols != 1 || ts[i].type() != CV_64F ||
+            Ks[i].rows != 3 || Ks[i].cols != 3 || Ks[i].type() != CV_64F) {
+            std::cerr << "相机 " << i << " 的参数格式错误" << std::endl;
+            file.close();
+            return;
+        }
+
         double f = Ks[i].at<double>(0, 0); // 焦距（fx）
-        const cv::Mat& R = Rs[i];
-        const cv::Mat& t = ts[i];
+        cv::Vec4d q = rotationMatrixToQuaternion(Rs[i]); // 旋转矩阵转四元数
+        const cv::Mat& t = ts[i]; // 平移向量
 
-        // 计算相机中心位置 C = -Rᵀ * t
-        cv::Mat C = -R.t() * t;
-        // 旋转矩阵转四元数
-        cv::Vec4d q = rotationMatrixToQuaternion(R);
-
-        // 输出格式：
-        // 文件名 焦距 qw qx qy qz Cx Cy Cz 0
+        // 写入相机信息：文件名 焦距 四元数 平移向量 相机ID 畸变
         file << imageNames[i] << " " << f << " "
             << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << " "
-            << C.at<double>(0) << " " << C.at<double>(1) << " " << C.at<double>(2)
-            << " 0\n";
+            << t.at<double>(0) << " " << t.at<double>(1) << " " << t.at<double>(2)
+            << " 0 0\n"; // 相机ID=0，畸变=0
     }
 
     file << "\n";
 
     // 写入三维点信息
     file << points3D.size() << "\n";
-
     for (size_t i = 0; i < points3D.size(); ++i) {
         const cv::Point3d& P = points3D[i];
         const auto& visList = viewIndices[i];
 
-        // ---- 提取颜色（从第一个可见图像取或取平均）----
+        // 验证可见性列表
+        if (visList.size() > imageNames.size()) {
+            std::cerr << "3D点 " << i << " 的可见性列表长度无效" << std::endl;
+            file.close();
+            return;
+        }
+
+        // 提取颜色（从第一个可见图像取，或取平均）
         cv::Vec3d color(0, 0, 0);
         int count = 0;
         for (size_t j = 0; j < visList.size(); ++j) {
             int imgIdx = visList[j];
+            if (imgIdx < 0 || imgIdx >= images.size()) {
+                std::cerr << "3D点 " << i << " 的相机索引 " << imgIdx << " 无效" << std::endl;
+                continue;
+            }
             const cv::Mat& img = images[imgIdx];
-            // 从 projections2D_all 中获取第 imgIdx 相机上第 i 个三维点的投影坐标
+            // 使用 viewIndices[j] 对应的 projections2D_all[imgIdx][i]
+            if (imgIdx >= projections2D_all.size() || i >= projections2D_all[imgIdx].size()) {
+                std::cerr << "3D点 " << i << " 在相机 " << imgIdx << " 的投影坐标无效" << std::endl;
+                continue;
+            }
             cv::Point2d pt = projections2D_all[imgIdx][i];
             if (pt.x >= 0 && pt.x < img.cols && pt.y >= 0 && pt.y < img.rows) {
                 cv::Vec3b pix = img.at<cv::Vec3b>(cv::Point(pt.x, pt.y));
@@ -305,23 +322,29 @@ void Export_To_NVM(
                 count++;
             }
         }
-        if (count > 0) color /= count;
-        else color = cv::Vec3d(255, 255, 255); // 没有颜色信息则设白
+        if (count > 0) {
+            color /= count;
+        }
+        else {
+            color = cv::Vec3d(255, 255, 255); // 默认白色
+        }
 
-        // ---- 写入三维点 ----
+        // 写入 3D 点：坐标 颜色 观测数量 观测信息
         file << P.x << " " << P.y << " " << P.z << " "
-            << (int)color[0] << " " << (int)color[1] << " " << (int)color[2] << " ";
-
-        // ---- 写入可见性信息 ----
-        file << visList.size() << " ";
+            << static_cast<int>(color[0]) << " " << static_cast<int>(color[1]) << " " << static_cast<int>(color[2]) << " "
+            << visList.size();
         for (size_t j = 0; j < visList.size(); ++j) {
             int imgIdx = visList[j];
-            const cv::Point2d& pt = projections2D_all[imgIdx][i]; // 从相机 imgIdx 获取第 i 个三维点的投影
-            file << imgIdx << " " << j << " " << pt.x << " " << pt.y << " ";
+            if (imgIdx >= projections2D_all.size() || i >= projections2D_all[imgIdx].size()) {
+                continue;
+            }
+            const cv::Point2d& pt = projections2D_all[imgIdx][i];
+            file << " " << imgIdx << " 0 " << pt.x << " " << pt.y; // 特征索引设为 0
         }
         file << "\n";
     }
 
+    // 写入结束标志
     file << "\n0\n";
     file.close();
     std::cout << "NVM 导出完成：scene.nvm" << std::endl;
