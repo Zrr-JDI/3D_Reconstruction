@@ -1,10 +1,10 @@
-#include <filesystem>
+ï»¿#include <filesystem>
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include"PCF.h"
 #include"CloudGenerate.h"
 using namespace std;
-using namespace cv; 
+using namespace cv;
 namespace fs = std::filesystem;
 
 bool Judge_Image(vector<bool>& image_judge)
@@ -19,46 +19,47 @@ bool Judge_Image(vector<bool>& image_judge)
     return false;
 }
 
+
 int main()
 {
 
-    // ×îÖÕ±£´æÊı¾İ
-    vector<string> imageNames;                 // Ã¿ÕÅÍ¼Æ¬ÎÄ¼şÃû£¨ÓëÕæÊµÍ¼Æ¬Â·¾¶Ò»ÖÂ£©
-    vector<cv::Mat> Rs;                               // Ã¿ÕÅÏà»úµÄĞı×ª¾ØÕó (3x3)
-    vector<cv::Mat> ts;                               // Ã¿ÕÅÏà»úµÄÆ½ÒÆÏòÁ¿ (3x1)
-    vector<cv::Mat> Ks;                               // Ã¿ÕÅÏà»úµÄÄÚ²Î¾ØÕó (3x3)
-    vector<cv::Point3d> points3D;                     // È«¾ÖÈıÎ¬µã×ø±ê£¨ÊÀ½ç×ø±êÏµ£©
-    vector<vector<cv::Point2d>> projections2D_all; // Ã¿¸öÏà»úÉÏËùÓĞÈıÎ¬µãµÄ¶şÎ¬Í¶Ó°×ø±ê
-    vector<vector<int>> viewIndices;             // Ã¿¸ö3DµãÔÚÄÄĞ©Ïà»úÖĞ±»¹Û²âµ½£¨Ïà»úË÷Òı£©
-    vector<cv::Mat> images;                            // ¶ÔÓ¦µÄÔ­Ê¼Í¼Ïñ£¨ÓÃÓÚÌáÈ¡ÑÕÉ«£©
+    // æœ€ç»ˆä¿å­˜æ•°æ®
+    vector<string> imageNames;                 // æ¯å¼ å›¾ç‰‡æ–‡ä»¶åï¼ˆä¸çœŸå®å›¾ç‰‡è·¯å¾„ä¸€è‡´ï¼‰
+    vector<Mat> Rs;                               // æ¯å¼ ç›¸æœºçš„æ—‹è½¬çŸ©é˜µ (3x3)
+    vector<Mat> ts;                               // æ¯å¼ ç›¸æœºçš„å¹³ç§»å‘é‡ (3x1)
+    vector<Mat> Ks;                               // æ¯å¼ ç›¸æœºçš„å†…å‚çŸ©é˜µ (3x3)
+    vector<Point3d> points3D;                     // å…¨å±€ä¸‰ç»´ç‚¹åæ ‡ï¼ˆä¸–ç•Œåæ ‡ç³»ï¼‰
+    vector<vector<Point2d>> projections2D_all; // æ¯ä¸ªç›¸æœºä¸Šæ‰€æœ‰ä¸‰ç»´ç‚¹çš„äºŒç»´æŠ•å½±åæ ‡
+    vector<vector<int>> viewIndices;             // æ¯ä¸ª3Dç‚¹åœ¨å“ªäº›ç›¸æœºä¸­è¢«è§‚æµ‹åˆ°ï¼ˆç›¸æœºç´¢å¼•ï¼‰
+    vector<Mat> images;                            // å¯¹åº”çš„åŸå§‹å›¾åƒï¼ˆç”¨äºæå–é¢œè‰²ï¼‰
 
 
-    // ĞèÒªÓÃµ½Êı¾İ£¬²»ÓÃ×îÖÕ±£´æ
-    vector<vector<int>> point3DIds; // point3DIds[i][j] ±íÊ¾µÚ i ÕÅÍ¼µÚ j ¸öÌØÕ÷µã¶ÔÓ¦µÄ points3D Ë÷Òı
-    vector<vector<cv::Point2d>>feature_points;              // Ã¿Ò»ÕÅ¼ÇÂ¼ÌØÕ÷µã
-    cv::Mat diffcoeffs;                                    //Ïà»úµÄ»û±ä²ÎÊı
-    cv::Mat K;                                              //Ïà»úÄÚ²Î(ËùÓĞÏà»úÄÚ²ÎÒ»Ñù)
-    int num = 0;                                              //Ìí¼ÓµÄµÚ¼¸ÕÅÍ¼Æ¬
+    // éœ€è¦ç”¨åˆ°æ•°æ®ï¼Œä¸ç”¨æœ€ç»ˆä¿å­˜
+    vector<vector<int>> point3DIds; // point3DIds[i][j] è¡¨ç¤ºç¬¬ i å¼ å›¾ç¬¬ j ä¸ªç‰¹å¾ç‚¹å¯¹åº”çš„ points3D ç´¢å¼•
+    vector<vector<cv::Point2d>>feature_points;              // æ¯ä¸€å¼ è®°å½•ç‰¹å¾ç‚¹
+    cv::Mat diffcoeffs;                                    //ç›¸æœºçš„ç•¸å˜å‚æ•°
+    cv::Mat K;                                              //ç›¸æœºå†…å‚(æ‰€æœ‰ç›¸æœºå†…å‚ä¸€æ ·)
+    int num = 0;                                              //æ·»åŠ çš„ç¬¬å‡ å¼ å›¾ç‰‡
     vector<cv::Mat>Remaining_images;
     vector<string> Remaining_imageNames;
 
-    // Ö¸¶¨Í¼Æ¬ÎÄ¼ş¼ĞÂ·¾¶
+    // æŒ‡å®šå›¾ç‰‡æ–‡ä»¶å¤¹è·¯å¾„
     string folder_path = "images";
 
-    // Ö§³ÖµÄÍ¼Æ¬À©Õ¹Ãû
+    // æ”¯æŒçš„å›¾ç‰‡æ‰©å±•å
     vector<string> image_extensions = { ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".gif" };
 
 
 
-    // ±éÀúÎÄ¼ş¼Ğ
+    // éå†æ–‡ä»¶å¤¹
     for (const auto& entry : fs::directory_iterator(folder_path)) {
-        string file_path = entry.path().string(); // »ñÈ¡ÍêÕûÂ·¾¶
+        string file_path = entry.path().string(); // è·å–å®Œæ•´è·¯å¾„
         string extension = fs::path(file_path).extension().string();
 
-        // ½«À©Õ¹Ãû×ª»»ÎªĞ¡Ğ´
+        // å°†æ‰©å±•åè½¬æ¢ä¸ºå°å†™
         transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
-        // ¼ì²éÊÇ·ñÎªÖ§³ÖµÄÍ¼Æ¬¸ñÊ½
+        // æ£€æŸ¥æ˜¯å¦ä¸ºæ”¯æŒçš„å›¾ç‰‡æ ¼å¼
         if (find(image_extensions.begin(), image_extensions.end(), extension) != image_extensions.end()) {
             string relative_path = fs::relative(entry.path(), fs::current_path()).string();
             Remaining_imageNames.push_back(relative_path);
@@ -66,16 +67,16 @@ int main()
     }
 
 
-    // ¶ÁÈ¡ Ramining_imageNames ÖĞµÄÍ¼Æ¬
+    // è¯»å– Ramining_imageNames ä¸­çš„å›¾ç‰‡
     for (const auto& image_path : Remaining_imageNames) {
-        // Ê¹ÓÃ OpenCV ¶ÁÈ¡Í¼Æ¬
-        cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR); // ¶ÁÈ¡Îª²ÊÉ«Í¼Æ¬
+        // ä½¿ç”¨ OpenCV è¯»å–å›¾ç‰‡
+        cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR); // è¯»å–ä¸ºå½©è‰²å›¾ç‰‡
         if (!image.empty()) {
             Remaining_images.push_back(image);
-            std::cout << "³É¹¦¶ÁÈ¡Í¼Æ¬: " << image_path << std::endl;
+            std::cout << "æˆåŠŸè¯»å–å›¾ç‰‡: " << image_path << std::endl;
         }
         else {
-            std::cerr << "ÎŞ·¨¶ÁÈ¡Í¼Æ¬: " << image_path << std::endl;
+            std::cerr << "æ— æ³•è¯»å–å›¾ç‰‡: " << image_path << std::endl;
             return -1;
         }
     }
@@ -83,7 +84,7 @@ int main()
 
 
 
-    // Ïà»úĞ£×¼(ÌîĞ´K£¬diffcoeffs)
+    // ç›¸æœºæ ¡å‡†(å¡«å†™Kï¼Œdiffcoeffs)
 
 
 
@@ -99,7 +100,7 @@ int main()
 
 
 
-    // µÚÒ»ÂÖÌØÕ÷ÌáÈ¡ºÍÆ¥Åä
+    // ç¬¬ä¸€è½®ç‰¹å¾æå–å’ŒåŒ¹é…
 
 
 
@@ -115,7 +116,7 @@ int main()
 
 
 
-    // Éî¶È¹À¼Æ³õ²½Éú³ÉµãÔÆ
+    // æ·±åº¦ä¼°è®¡åˆæ­¥ç”Ÿæˆç‚¹äº‘
 
 
 
@@ -136,7 +137,7 @@ int main()
 
 
 
-    // Ôö¼ÓµãÔÆÊıÁ¿
+    // å¢åŠ ç‚¹äº‘æ•°é‡
     
     vector<bool>image_judge;
     image_judge.resize(Remaining_images.size(), false);
@@ -145,15 +146,15 @@ int main()
         image_judge.resize(image_judge.size(), true);
         for (int i = 0; i < image_judge.size(); i++)
         {
-            int point_num=0;// È¡×î´óÊı
+            int point_num=0;// å–æœ€å¤§æ•°
             int camera_number;
-            vector<cv::Point2d> new_feature_points;// »ñÈ¡¸ÃÍ¼Æ¬µÄÌØÕ÷µã
+            vector<cv::Point2d> new_feature_points;// è·å–è¯¥å›¾ç‰‡çš„ç‰¹å¾ç‚¹
             vector<cv::Point2d> old_match_points;
             vector<cv::Point2d> new_match_points;
-            // ¶ÔÏàÓ¦µÄRemaining_Image[i]½øĞĞÌØÕ÷Æ¥ÅäºÍÅĞ¶¨
+            // å¯¹ç›¸åº”çš„Remaining_Image[i]è¿›è¡Œç‰¹å¾åŒ¹é…å’Œåˆ¤å®š
             for (int j = 0; j < imageNames.size(); j++)
             {
-                // Èç¹ûÌØÕ÷µã¸öÊı´óÓÚpoint_num,¸üĞÂnew_match_pointsºÍold_match_points,camera_number·ñÔò²»×ö´¦Àí
+                // å¦‚æœç‰¹å¾ç‚¹ä¸ªæ•°å¤§äºpoint_num,æ›´æ–°new_match_pointså’Œold_match_points,camera_numberå¦åˆ™ä¸åšå¤„ç†
                 if ()
                 {
                     camera_number = j;
@@ -165,7 +166,7 @@ int main()
 
             }
 
-            if (point_num>=4)// Æ¥Åä³É¹¦
+            if (point_num>=4)// åŒ¹é…æˆåŠŸ
             {
                 imageNames.push_back(Remaining_imageNames[i]);
                 images.push_back(Remaining_images[i]);
@@ -180,12 +181,12 @@ int main()
                 cv::Mat rotate_vec;
                 point3DIds;
 
-                // Æ´½Ó [R | t]
+                // æ‹¼æ¥ [R | t]
                 Mat old_camera;
-                hconcat(Rs[camera_number], ts[camera_number], old_camera);   // 3¡Á4
+                hconcat(Rs[camera_number], ts[camera_number], old_camera);   // 3Ã—4
 
-                // ¼ÆËãÍ¶Ó°¾ØÕó
-                old_camera = Ks[camera_number] * old_camera;          // 3¡Á4
+                // è®¡ç®—æŠ•å½±çŸ©é˜µ
+                old_camera = Ks[camera_number] * old_camera;          // 3Ã—4
 
                 bool judge=IncreaseCloud(point3DIds,feature_points,camera_number,num, old_camera, old_match_points, points3D, new_match_points, K, diffcoeffs, translate_vec, rotate_vec, viewIndices);
                 if (!judge) {
@@ -195,7 +196,7 @@ int main()
                 ts.push_back(translate_vec);
                 break;
             }
-            else// Æ¥ÅäÊ§°Ü
+            else// åŒ¹é…å¤±è´¥
             {
                 image_judge[i] = false;
             }
@@ -206,36 +207,75 @@ int main()
     {
         return -1;
     }
+    
 
     Export_To_NVM(imageNames, Rs, ts, Ks, points3D, projections2D_all, viewIndices, images);
 
-    //±íÃæÖØ½¨²¿·Ö
-    /*int ret = DensifyPointCloud();
-    if (ret != 0)
-    {
-        cerr << "³íÃÜÖØ½¨Ê§°Ü£¬ÏêÇé¼û logs/DensifyPointCloud.log" << endl;
-        return -1;
-    }
+    //string sourceImagesDir = "images"; 
+    //string targetMvsDir = "MVS";       
+    //string targetImagesDir = targetMvsDir + "/images"; 
 
-    ret = ReconstructMesh();
-    if (ret != 0)
-    {
-        cerr << "ÇúÃæÖØ½¨Ê§°Ü£¬ÏêÇé¼û logs/ReconstructMesh.log" << endl;
-        return -1;
-    }
+    //if (!fs::exists(targetMvsDir)) 
+    //{
+    //    std::cerr << "é”™è¯¯ï¼šMVS æ–‡ä»¶å¤¹ä¸å­˜åœ¨ - " << targetMvsDir << std::endl;
+    //    return -1;
+    //}
 
-    ret = RefineMesh();
-    if (ret != 0)
-    {
-        cerr << "Íø¸ñÓÅ»¯Ê§°Ü£¬ÏêÇé¼û logs/RefineMesh.log" << endl;
-        return -1;
-    }
+    //if (!fs::exists(sourceImagesDir)) 
+    //{
+    //    std::cerr << "é”™è¯¯ï¼šimages æ–‡ä»¶å¤¹ä¸å­˜åœ¨ - " << sourceImagesDir << std::endl;
+    //    return -1;
+    //}
 
-    ret = TextureMesh();
-    if (ret != 0)
-    {
-        cerr << "ÎÆÀíÌùÍ¼Ê§°Ü£¬ÏêÇé¼û logs/TextureMesh.log" << endl;
-        return -1;
-    }*/
+    //if (fs::exists(targetImagesDir)) 
+    //{
+    //    std::cout << "ç›®æ ‡è·¯å¾„å·²å­˜åœ¨ images æ–‡ä»¶å¤¹ï¼Œå°†è¦†ç›– - " << targetImagesDir << std::endl;
+    //    fs::remove_all(targetImagesDir); 
+    //}
+
+    //fs::copy(sourceImagesDir, targetImagesDir, fs::copy_options::recursive);
+
+    //if (!EnsureLogDirectory())
+    //{
+    //    cout << "åˆ›å»ºlogsæ—¥å¿—ç›®å½•å¤±è´¥" << endl;
+    //    return -1;
+    //}
+
+    ////è¡¨é¢é‡å»ºéƒ¨åˆ†
+    //int ret = InterfaceVisualSFM();
+    //if (ret != 0)
+    //{
+    //    cerr << "ç”Ÿæˆ.mvså¤±è´¥ï¼Œè¯¦æƒ…è§ logs/InterfaceVisualSFM.log" << endl;
+    //    return -1;
+    //}
+
+    //ret = DensifyPointCloud();
+    //if (ret != 0)
+    //{
+    //    cerr << "ç¨ å¯†é‡å»ºå¤±è´¥ï¼Œè¯¦æƒ…è§ logs/DensifyPointCloud.log" << endl;
+    //    return -1;
+    //}
+
+    //ret = ReconstructMesh();
+    //if (ret != 0)
+    //{
+    //    cerr << "æ›²é¢é‡å»ºå¤±è´¥ï¼Œè¯¦æƒ…è§ logs/ReconstructMesh.log" << endl;
+    //    return -1;
+    //}
+
+    //ret = RefineMesh();
+    //if (ret != 0)
+    //{
+    //    cerr << "ç½‘æ ¼ä¼˜åŒ–å¤±è´¥ï¼Œè¯¦æƒ…è§ logs/RefineMesh.log" << endl;
+    //    return -1;
+    //}
+
+    //ret = TextureMesh();
+    //if (ret != 0)
+    //{
+    //    cerr << "çº¹ç†è´´å›¾å¤±è´¥ï¼Œè¯¦æƒ…è§ logs/TextureMesh.log" << endl;
+    //    return -1;
+    //}
+
 	return 0;
 }
