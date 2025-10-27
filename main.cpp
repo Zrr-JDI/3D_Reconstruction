@@ -3,21 +3,89 @@
 #include "opencv2/highgui/highgui.hpp"
 #include"PCF.h"
 #include"CloudGenerate.h"
+#include"FeatureDetection.h"
+#include"CameraCalibrator.h"
 using namespace std;
 using namespace cv;
 namespace fs = std::filesystem;
 
-bool Judge_Image(vector<bool>& image_judge)
+// 将 KeyPoint 向量转为 Point2d 向量
+std::vector<cv::Point2d> KeyPointsToPoints2D(const std::vector<cv::KeyPoint>& keypoints)
 {
-    if (image_judge.size() == 0)
-        return false;
-    for (int i = 0; i < image_judge.size(); i++)
-    {
-        if (image_judge[i] == true)
-            return true;
-    }
-    return false;
+    std::vector<cv::Point2d> points;
+    points.reserve(keypoints.size());
+    for (const auto& kp : keypoints)
+        points.emplace_back(kp.pt.x, kp.pt.y);
+    return points;
 }
+
+// 保存标定参数到YAML文件
+bool saveCalibrationParameters(const std::string& filename,
+    const std::vector<cv::Mat>& Ks,
+    const cv::Mat& distCoeffs,
+    double reprojectionError,
+    cv::Size boardSize,
+    float squareSize) {
+    cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+
+    if (!fs.isOpened()) {
+        std::cerr << "错误: 无法创建文件 " << filename << std::endl;
+        return false;
+    }
+
+    // 保存标定参数
+    fs << "calibration_date" << "相机标定结果";
+
+    // 内参矩阵 K
+    if (!Ks.empty()) {
+        fs << "camera_matrix" << Ks[0];
+    }
+
+    // 畸变参数
+    fs << "distortion_coefficients" << distCoeffs;
+
+    // 标定精度信息
+    fs << "reprojection_error" << reprojectionError;
+
+    // 棋盘格信息
+    fs << "board_width" << boardSize.width;
+    fs << "board_height" << boardSize.height;
+    fs << "square_size" << squareSize;
+
+    fs.release();
+
+    std::cout << "相机参数已保存到: " << filename << std::endl;
+    return true;
+}
+
+// 打印相机参数
+void printCameraParameters(const std::vector<cv::Mat>& Ks, const cv::Mat& distCoeffs, double reprojectionError) {
+    std::cout << "\n=== 相机标定结果 ===" << std::endl;
+    std::cout << "重投影误差: " << reprojectionError << " 像素" << std::endl;
+
+    if (!Ks.empty()) {
+        std::cout << "\n内参矩阵 K:" << std::endl;
+        std::cout << "[" << Ks[0].at<double>(0, 0) << ", "
+            << Ks[0].at<double>(0, 1) << ", "
+            << Ks[0].at<double>(0, 2) << "]" << std::endl;
+        std::cout << "[" << Ks[0].at<double>(1, 0) << ", "
+            << Ks[0].at<double>(1, 1) << ", "
+            << Ks[0].at<double>(1, 2) << "]" << std::endl;
+        std::cout << "[" << Ks[0].at<double>(2, 0) << ", "
+            << Ks[0].at<double>(2, 1) << ", "
+            << Ks[0].at<double>(2, 2) << "]" << std::endl;
+    }
+
+    std::cout << "\n畸变参数: [";
+    if (!distCoeffs.empty()) {
+        for (int i = 0; i < distCoeffs.cols; i++) {
+            std::cout << distCoeffs.at<double>(0, i);
+            if (i < distCoeffs.cols - 1) std::cout << ", ";
+        }
+    }
+    std::cout << "]" << std::endl;
+}
+
 
 
 int main()
@@ -36,7 +104,9 @@ int main()
 
     // 需要用到数据，不用最终保存
     vector<vector<int>> point3DIds; // point3DIds[i][j] 表示第 i 张图第 j 个特征点对应的 points3D 索引
-    vector<vector<cv::Point2d>>feature_points;              // 每一张记录特征点
+    vector<vector<cv::KeyPoint>>Feature_points;              //记录特征点具体数据用于匹配
+    vector<vector<cv::Point2d>>feature_points;              // 每一张记录特征点坐标数据
+    vector<cv::Mat>descriptors;                             //保存特征点的描述
     cv::Mat diffcoeffs;                                    //相机的畸变参数
     cv::Mat K;                                              //相机内参(所有相机内参一样)
     int num = 0;                                              //添加的第几张图片
@@ -45,9 +115,10 @@ int main()
 
     // 指定图片文件夹路径
     string folder_path = "images";
+    string output_path = "camera";
 
     // 支持的图片扩展名
-    vector<string> image_extensions = { ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".gif" };
+    vector<string> image_extensions = { ".jpg", ".jpeg", ".png", ".bmp", ".tiff"};
 
 
 
@@ -82,35 +153,103 @@ int main()
     }
 
 
+    Size boardSize(9, 6);      // 棋盘格内角点数量 (width, height)
+    float squareSize = 0.025f;     // 棋盘格方格实际尺寸(米)
+
+    if (Remaining_imageNames.empty()) {
+        std::cerr << "错误: 在目录 " << folder_path << " 中未找到图像文件" << std::endl;
+        std::cerr << "支持的格式: .jpg, .jpeg, .png, .bmp, .tiff" << std::endl;
+        std::cerr << "请将棋盘格图片放入 " << folder_path << " 目录后重新运行程序" << std::endl;
+        return -1;
+    }
 
 
     // 相机校准(填写K，diffcoeffs)
+    MonoCameraCalibrator calibrator(boardSize, squareSize);
 
+    std::cout << "\n开始执行相机标定..." << std::endl;
+    std::cout << "棋盘格尺寸: " << boardSize.width << "x" << boardSize.height << " 角点" << std::endl;
+    std::cout << "方格尺寸: " << squareSize * 1000 << " mm" << std::endl;
+    std::cout << "图像数量: " << Remaining_imageNames.size() << " 张" << std::endl;
 
+    // 执行相机标定
+    CalibrationResult result = calibrator.calibrateCamera(Remaining_imageNames);
 
+    if (result.success) {
+        std::cout << "\n✓ 相机标定成功!" << std::endl;
 
+        // 打印相机参数
+        printCameraParameters(result.Ks, result.distCoeffs, result.reprojectionError);
 
+        // 保存参数到YAML文件
+        std::string yamlFile = output_path + "\\camera.yml";
+        if (saveCalibrationParameters(yamlFile, result.Ks, result.distCoeffs, result.reprojectionError, boardSize, squareSize)) {
+            std::cout << "\n✓ 相机参数已保存到: " << yamlFile << std::endl;
 
+            // 显示YAML文件内容预览
+            std::cout << "\nYAML文件内容预览:" << std::endl;
+            std::ifstream file(yamlFile.c_str());
+            if (file.is_open()) {
+                std::string line;
+                int count = 0;
+                while (std::getline(file, line) && count < 10) {
+                    std::cout << line << std::endl;
+                    count++;
+                }
+                file.close();
+            }
+            else {
+                std::cerr << "警告: 无法打开YAML文件进行预览" << std::endl;
+            }
+        }
+        else {
+            std::cerr << "错误: 保存YAML文件失败" << std::endl;
+        }
 
+        std::cout << "\n标定完成! 所有结果已保存到 " << output_path << " 目录" << std::endl;
 
+    }
+    else {
+        std::cerr << "\n✗ 相机标定失败: " << result.errorMessage << std::endl;
+        std::cerr << "当前状态: " << calibrator.getStatus() << std::endl;
+        return -1;
+    }
 
-
-
-
+    diffcoeffs = result.distCoeffs;
+    K = result.Ks[0];
 
 
 
     // 第一轮特征提取和匹配
-
-
-
-
-
-
-
-
-
-
+    FeatureMatcher matcher;
+    vector<cv::KeyPoint> key_points_0,key_points_1;
+    cv::Mat des_0,des_1;
+    matcher.extractFeatures(Remaining_images[0], key_points_0,des_0);
+    matcher.extractFeatures(Remaining_images[1], key_points_1, des_1);
+    vector<cv::Point2d> match_points_0;
+    vector<cv::Point2d> match_points_1;
+    matcher.matchFeatures(key_points_0,des_0,key_points_1,des_1,match_points_0,match_points_1);
+    Feature_points.push_back(key_points_0);
+    Feature_points.push_back(key_points_1);
+    feature_points.push_back(KeyPointsToPoints2D(key_points_0));
+    feature_points.push_back(KeyPointsToPoints2D(key_points_1));
+    imageNames.push_back(Remaining_imageNames[0]);
+    imageNames.push_back(Remaining_imageNames[1]);
+    images.push_back(Remaining_images[0]);
+    images.push_back(Remaining_images[1]);
+    Remaining_imageNames.erase(Remaining_imageNames.begin());
+    Remaining_imageNames.erase(Remaining_imageNames.begin());
+    Remaining_images.erase(Remaining_images.begin());
+    Remaining_images.erase(Remaining_images.begin());
+    projections2D_all.push_back(match_points_0);
+    projections2D_all.push_back(match_points_1);
+    descriptors.push_back(des_0);
+    descriptors.push_back(des_1);
+    Ks.push_back(result.Ks[0]);
+    Ks.push_back(result.Ks[1]);
+    result.Ks.erase(result.Ks.begin());
+    result.Ks.erase(result.Ks.begin());
+    num += 2;
 
 
 
@@ -138,32 +277,33 @@ int main()
 
 
     // 增加点云数量
-    
-    vector<bool>image_judge;
-    image_judge.resize(Remaining_images.size(), false);
-    while (Judge_Image(image_judge))
+    do
     {
-        image_judge.resize(image_judge.size(), true);
-        for (int i = 0; i < image_judge.size(); i++)
+        bool judge = false;
+        for (int i = 0; i < Remaining_imageNames.size(); i++)
         {
             int point_num=0;// 取最大数
             int camera_number;
+            vector<cv::KeyPoint> new_key_points;
+            cv::Mat des;
+            matcher.extractFeatures(Remaining_images[i], new_key_points,des);
             vector<cv::Point2d> new_feature_points;// 获取该图片的特征点
             vector<cv::Point2d> old_match_points;
             vector<cv::Point2d> new_match_points;
             // 对相应的Remaining_Image[i]进行特征匹配和判定
             for (int j = 0; j < imageNames.size(); j++)
             {
+                vector<cv::Point2d> match_pointsA;
+                vector<cv::Point2d> match_pointsB;
+                matcher.matchFeatures(Feature_points[j],descriptors[j],new_key_points,des,match_pointsA,match_pointsB);
                 // 如果特征点个数大于point_num,更新new_match_points和old_match_points,camera_number否则不做处理
-                if ()
+                if (match_pointsA.size()>new_match_points.size())
                 {
+                    point_num = match_pointsA.size();
                     camera_number = j;
+                    new_match_points = match_pointsA;
+                    old_match_points = match_pointsB;
                 }
-                else
-                {
-
-                }
-
             }
 
             if (point_num>=4)// 匹配成功
@@ -172,7 +312,9 @@ int main()
                 images.push_back(Remaining_images[i]);
                 Remaining_imageNames.erase(Remaining_imageNames.begin() + i);
                 Remaining_images.erase(Remaining_images.begin()+i);
-                image_judge.erase(image_judge.begin() + i);
+                Feature_points.push_back(new_key_points);
+                descriptors.push_back(des);
+                new_feature_points = KeyPointsToPoints2D(new_key_points);
                 feature_points.push_back(new_feature_points);
                 point3DIds.push_back(vector<int>(new_feature_points.size(), -1));
                 projections2D_all.push_back(new_match_points);
@@ -180,7 +322,7 @@ int main()
                 cv::Mat translate_vec;
                 cv::Mat rotate_vec;
                 point3DIds;
-
+                judge = true;
                 // 拼接 [R | t]
                 Mat old_camera;
                 hconcat(Rs[camera_number], ts[camera_number], old_camera);   // 3×4
@@ -188,20 +330,18 @@ int main()
                 // 计算投影矩阵
                 old_camera = Ks[camera_number] * old_camera;          // 3×4
 
-                bool judge=IncreaseCloud(point3DIds,feature_points,camera_number,num, old_camera, old_match_points, points3D, new_match_points, K, diffcoeffs, translate_vec, rotate_vec, viewIndices);
-                if (!judge) {
+                bool success=IncreaseCloud(point3DIds,feature_points,camera_number,num, old_camera, old_match_points, points3D, new_match_points, K, diffcoeffs, translate_vec, rotate_vec, viewIndices);
+                if (!success) {
                     return -1;
                 }
                 Rs.push_back(rotate_vec);
                 ts.push_back(translate_vec);
+                Ks.push_back(result.Ks[i]);
+                result.Ks.erase(result.Ks.begin()+i);
                 break;
             }
-            else// 匹配失败
-            {
-                image_judge[i] = false;
-            }
         }
-    }
+    } while (judge == true && Remaining_imageNames.size() != 0);
 
     if (SimpleBundleAdjustAfterPnP(points3D, projections2D_all, Ks, Rs, ts) == false)
     {
