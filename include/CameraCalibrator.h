@@ -1,87 +1,90 @@
-ï»¿#pragma once
+#pragma once
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <string>
+#include <iostream>
+#include <fstream>
+#include <chrono>
 
 /**
- * @brief ç›¸æœºæ ‡å®šç»“æœç»“æ„ä½“
+ * @brief Ïà»ú±ê¶¨½á¹û½á¹¹Ìå
  */
 struct CalibrationResult {
     bool success;
-    std::vector<cv::Mat> Ks;           // å†…å‚çŸ©é˜µé›†åˆ
-    cv::Mat distCoeffs;                 // ç•¸å˜å‚æ•°
-    double reprojectionError;           // é‡æŠ•å½±è¯¯å·®
+    std::vector<cv::Mat> Ks;           // ÄÚ²Î¾ØÕó¼¯ºÏ
+    cv::Mat distCoeffs;                 // »û±ä²ÎÊı
+    double reprojectionError;           // ÖØÍ¶Ó°Îó²î
     std::string errorMessage;
-    
+
     CalibrationResult() : success(false), reprojectionError(0.0) {}
 };
 
 /**
- * @brief ç›¸æœºæ ‡å®šå™¨ç±»
+ * @brief Ïà»ú±ê¶¨Æ÷Àà
  */
 class MonoCameraCalibrator {
 public:
     /**
-     * @brief æ„é€ å‡½æ•°
-     * @param boardSize æ£‹ç›˜æ ¼å†…è§’ç‚¹æ•°é‡
-     * @param squareSize æ£‹ç›˜æ ¼æ–¹æ ¼å®é™…å°ºå¯¸(ç±³)
+     * @brief ¹¹Ôìº¯Êı
+     * @param boardSize ÆåÅÌ¸ñÄÚ½ÇµãÊıÁ¿
+     * @param squareSize ÆåÅÌ¸ñ·½¸ñÊµ¼Ê³ß´ç(Ã×)
      */
     MonoCameraCalibrator(cv::Size boardSize, float squareSize);
-    
+
     /**
-     * @brief æ‰§è¡Œå®Œæ•´çš„ç›¸æœºæ ‡å®šæµç¨‹
-     * @param imagePaths æ£‹ç›˜æ ¼å›¾åƒè·¯å¾„åˆ—è¡¨
-     * @return æ ‡å®šç»“æœ
+     * @brief Ö´ĞĞÍêÕûµÄÏà»ú±ê¶¨Á÷³Ì
+     * @param imagePaths ÆåÅÌ¸ñÍ¼ÏñÂ·¾¶ÁĞ±í
+     * @return ±ê¶¨½á¹û
      */
     CalibrationResult calibrateCamera(const std::vector<std::string>& imagePaths);
-    
+
     /**
-     * @brief è®¡ç®—ç›¸æœºå†…å‚çŸ©é˜µ K
-     * @param objectPoints ä¸–ç•Œåæ ‡ç³»ä¸­çš„è§’ç‚¹
-     * @param imagePoints å›¾åƒåæ ‡ç³»ä¸­çš„è§’ç‚¹
-     * @param imageSize å›¾åƒå°ºå¯¸
-     * @param Ks è¾“å‡º: å†…å‚çŸ©é˜µé›†åˆ
-     * @return è®¡ç®—æ˜¯å¦æˆåŠŸ
+     * @brief ¼ÆËãÏà»úÄÚ²Î¾ØÕó K
+     * @param objectPoints ÊÀ½ç×ø±êÏµÖĞµÄ½Çµã
+     * @param imagePoints Í¼Ïñ×ø±êÏµÖĞµÄ½Çµã
+     * @param imageSize Í¼Ïñ³ß´ç
+     * @param Ks Êä³ö: ÄÚ²Î¾ØÕó¼¯ºÏ
+     * @return ¼ÆËãÊÇ·ñ³É¹¦
      */
     bool computeCameraIntrinsics(const std::vector<std::vector<cv::Point3f>>& objectPoints,
-                                const std::vector<std::vector<cv::Point2f>>& imagePoints,
-                                cv::Size imageSize, std::vector<cv::Mat>& Ks);
-    
+        const std::vector<std::vector<cv::Point2f>>& imagePoints,
+        cv::Size imageSize, std::vector<cv::Mat>& Ks);
+
     /**
-     * @brief è®¡ç®—ç•¸å˜å‚æ•°
-     * @param objectPoints ä¸–ç•Œåæ ‡ç³»ä¸­çš„è§’ç‚¹
-     * @param imagePoints å›¾åƒåæ ‡ç³»ä¸­çš„è§’ç‚¹
-     * @param imageSize å›¾åƒå°ºå¯¸
-     * @param cameraMatrix å†…å‚çŸ©é˜µ
-     * @param distCoeffs è¾“å‡º: ç•¸å˜å‚æ•°
-     * @param reprojectionError è¾“å‡º: é‡æŠ•å½±è¯¯å·®
-     * @return è®¡ç®—æ˜¯å¦æˆåŠŸ
+     * @brief ¼ÆËã»û±ä²ÎÊı
+     * @param objectPoints ÊÀ½ç×ø±êÏµÖĞµÄ½Çµã
+     * @param imagePoints Í¼Ïñ×ø±êÏµÖĞµÄ½Çµã
+     * @param imageSize Í¼Ïñ³ß´ç
+     * @param cameraMatrix ÄÚ²Î¾ØÕó
+     * @param distCoeffs Êä³ö: »û±ä²ÎÊı
+     * @param reprojectionError Êä³ö: ÖØÍ¶Ó°Îó²î
+     * @return ¼ÆËãÊÇ·ñ³É¹¦
      */
     bool computeDistortionCoefficients(const std::vector<std::vector<cv::Point3f>>& objectPoints,
-                                     const std::vector<std::vector<cv::Point2f>>& imagePoints,
-                                     cv::Size imageSize, const cv::Mat& cameraMatrix,
-                                     cv::Mat& distCoeffs, double& reprojectionError);
-    
+        const std::vector<std::vector<cv::Point2f>>& imagePoints,
+        cv::Size imageSize, const cv::Mat& cameraMatrix,
+        cv::Mat& distCoeffs, double& reprojectionError);
+
     /**
-     * @brief è·å–æ ‡å®šçŠ¶æ€ä¿¡æ¯
-     * @return çŠ¶æ€æè¿°å­—ç¬¦ä¸²
+     * @brief »ñÈ¡±ê¶¨×´Ì¬ĞÅÏ¢
+     * @return ×´Ì¬ÃèÊö×Ö·û´®
      */
     std::string getStatus() const;
 
 private:
-    cv::Size m_boardSize;      // æ£‹ç›˜æ ¼è§’ç‚¹æ•°é‡
-    float m_squareSize;        // æ£‹ç›˜æ ¼æ–¹æ ¼å®é™…å°ºå¯¸
-    std::string m_status;      // å†…éƒ¨çŠ¶æ€ä¿¡æ¯
-    
-    // æŸ¥æ‰¾æ£‹ç›˜æ ¼è§’ç‚¹
+    cv::Size m_boardSize;      // ÆåÅÌ¸ñ½ÇµãÊıÁ¿
+    float m_squareSize;        // ÆåÅÌ¸ñ·½¸ñÊµ¼Ê³ß´ç
+    std::string m_status;      // ÄÚ²¿×´Ì¬ĞÅÏ¢
+
+    // ²éÕÒÆåÅÌ¸ñ½Çµã
     bool findChessboardCorners(const cv::Mat& image, std::vector<cv::Point2f>& corners);
-    
-    // ç”Ÿæˆä¸–ç•Œåæ ‡ç³»ä¸­çš„è§’ç‚¹
+
+    // Éú³ÉÊÀ½ç×ø±êÏµÖĞµÄ½Çµã
     void generateObjectPoints(std::vector<cv::Point3f>& objectPoints);
-    
-    // éªŒè¯æ ‡å®šç»“æœ
+
+    // ÑéÖ¤±ê¶¨½á¹û
     bool validateCalibration(const cv::Mat& cameraMatrix, const cv::Mat& distCoeffs, double reprojectionError);
-    
-    // æ›´æ–°çŠ¶æ€ä¿¡æ¯
+
+    // ¸üĞÂ×´Ì¬ĞÅÏ¢
     void updateStatus(const std::string& message);
 };

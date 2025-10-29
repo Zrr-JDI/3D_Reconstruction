@@ -18,15 +18,19 @@
 //   points3D_out - 生成的稀疏三维点（相机1 参考系）
 // 返回:
 //   true 表示整个流程成功并至少产生一个3D点（若 outPly 非空则写文件成功）
-bool RunTwoViewReconstruction(const std::vector<cv::Point2d>& pts1,
-                              const std::vector<cv::Point2d>& pts2,
-                              const cv::Mat& K,
-                              const cv::Mat& distCoeffs,
-                              const std::string& outPly,
-                              cv::Mat& R,
-                              cv::Mat& t,
-                              std::vector<cv::Point3d>& points3D_out,
-                              double ransacThresh = 1.0,
-                              double reprojThreshold = 3.0);
+bool RunTwoViewReconstruction(
+    const std::vector<cv::Point2d>& pts1,
+    const std::vector<cv::Point2d>& pts2,
+    const cv::Mat& K,
+    const cv::Mat& distCoeffs,
+    const std::string& outPly,
+    cv::Mat& R,
+    cv::Mat& t,
+    std::vector<cv::Point3d>& points3D_out,
+    std::vector<cv::Point3d>& globalPoints3D,                 // 全局3D点容器
+    std::vector<std::vector<cv::Point2d>>& projections2D_all, // 每个相机的投影点
+    std::vector<std::vector<int>>& point3DIds,                // 每个图像特征点对应的3D点ID
+    double ransacThresh,
+    double reprojThreshold);
 
 #endif // STEREOPIPELINE_H
