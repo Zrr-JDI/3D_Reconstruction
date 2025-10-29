@@ -1,216 +1,197 @@
-ï»¿#include "CameraCalibrator.h"
-#include <iostream>
-#include <fstream>
-#include <chrono>
+#include "CameraCalibrator.h"
 
-// æ„é€ å‡½æ•°ï¼šåˆå§‹åŒ–æ£‹ç›˜æ ¼å°ºå¯¸å’Œæ–¹æ ¼å®é™…å¤§å°
+
 MonoCameraCalibrator::MonoCameraCalibrator(cv::Size boardSize, float squareSize)
     : m_boardSize(boardSize), m_squareSize(squareSize) {
-    updateStatus("ç›¸æœºæ ‡å®šå™¨åˆå§‹åŒ–å®Œæˆ");
+    updateStatus("Ïà»ú±ê¶¨Æ÷³õÊ¼»¯Íê³É");
 }
 
-// æ‰§è¡Œå®Œæ•´çš„ç›¸æœºæ ‡å®šæµç¨‹
 CalibrationResult MonoCameraCalibrator::calibrateCamera(const std::vector<std::string>& imagePaths) {
-    CalibrationResult result;  // åˆ›å»ºç»“æœå¯¹è±¡
-    auto startTime = std::chrono::high_resolution_clock::now();  // è®°å½•å¼€å§‹æ—¶é—´
+    CalibrationResult result;
+    auto startTime = std::chrono::high_resolution_clock::now();
 
-    updateStatus("å¼€å§‹ç›¸æœºæ ‡å®šæµç¨‹...");
+    updateStatus("¿ªÊ¼Ïà»ú±ê¶¨Á÷³Ì...");
 
-    // æ£€æŸ¥è¾“å…¥å›¾åƒè·¯å¾„æ˜¯å¦ä¸ºç©º
     if (imagePaths.empty()) {
-        result.errorMessage = "å›¾åƒè·¯å¾„åˆ—è¡¨ä¸ºç©º";
-        updateStatus("æ ‡å®šå¤±è´¥: " + result.errorMessage);
+        result.errorMessage = "Í¼ÏñÂ·¾¶ÁĞ±íÎª¿Õ";
+        updateStatus("±ê¶¨Ê§°Ü: " + result.errorMessage);
         return result;
     }
 
-    // å‡†å¤‡å­˜å‚¨ä¸–ç•Œåæ ‡ç‚¹å’Œå›¾åƒåæ ‡ç‚¹çš„å®¹å™¨
     std::vector<std::vector<cv::Point3f>> objectPoints;
     std::vector<std::vector<cv::Point2f>> imagePoints;
-    cv::Size imageSize(0, 0);  // å›¾åƒå°ºå¯¸åˆå§‹åŒ–ä¸º0
-    int validImageCount = 0;   // æœ‰æ•ˆå›¾åƒè®¡æ•°å™¨
+    cv::Size imageSize(0, 0);
+    int validImageCount = 0;
 
-    updateStatus("æ£€æµ‹æ£‹ç›˜æ ¼è§’ç‚¹...");
+    updateStatus("¼ì²âÆåÅÌ¸ñ½Çµã...");
 
-    // 1. éå†æ‰€æœ‰å›¾åƒï¼Œæ£€æµ‹æ£‹ç›˜æ ¼è§’ç‚¹
+    // 1. ¼ì²âËùÓĞÍ¼ÏñµÄ½Çµã
     for (size_t i = 0; i < imagePaths.size(); i++) {
-        // è¯»å–å›¾åƒï¼ˆç°åº¦æ¨¡å¼ï¼‰
         cv::Mat image = cv::imread(imagePaths[i], cv::IMREAD_GRAYSCALE);
         if (image.empty()) {
-            updateStatus("è­¦å‘Š: æ— æ³•è¯»å–å›¾åƒ: " + imagePaths[i]);
+            updateStatus("¾¯¸æ: ÎŞ·¨¶ÁÈ¡Í¼Ïñ: " + imagePaths[i]);
             continue;
         }
 
-        // è®°å½•ç¬¬ä¸€å¼ æœ‰æ•ˆå›¾åƒçš„å°ºå¯¸
+        // ¼ÇÂ¼Í¼Ïñ³ß´ç£¨Ê¹ÓÃµÚÒ»ÕÅÓĞĞ§Í¼ÏñµÄ³ß´ç£©
         if (imageSize.width == 0) {
             imageSize = image.size();
         }
 
-        // æ£€æµ‹æ£‹ç›˜æ ¼è§’ç‚¹
         std::vector<cv::Point2f> corners;
         if (findChessboardCorners(image, corners)) {
-            // ç”Ÿæˆå¯¹åº”çš„ä¸–ç•Œåæ ‡ç³»3Dç‚¹
+            // Éú³É¶ÔÓ¦µÄ3Dµã
             std::vector<cv::Point3f> objPoints;
             generateObjectPoints(objPoints);
 
-            // å­˜å‚¨æ£€æµ‹åˆ°çš„ç‚¹
             objectPoints.push_back(objPoints);
             imagePoints.push_back(corners);
             validImageCount++;
 
-            updateStatus("æˆåŠŸæ£€æµ‹å›¾åƒ " + std::to_string(i + 1) + " çš„è§’ç‚¹");
+            updateStatus("³É¹¦¼ì²âÍ¼Ïñ " + std::to_string(i + 1) + " µÄ½Çµã");
         }
         else {
-            updateStatus("è­¦å‘Š: æœªèƒ½åœ¨å›¾åƒ " + std::to_string(i + 1) + " ä¸­æ‰¾åˆ°æ£‹ç›˜æ ¼è§’ç‚¹");
+            updateStatus("¾¯¸æ: Î´ÄÜÔÚÍ¼Ïñ " + std::to_string(i + 1) + " ÖĞÕÒµ½ÆåÅÌ¸ñ½Çµã");
         }
     }
 
-    updateStatus("æœ‰æ•ˆå›¾åƒæ•°é‡: " + std::to_string(validImageCount) + "/" + std::to_string(imagePaths.size()));
+    updateStatus("ÓĞĞ§Í¼ÏñÊıÁ¿: " + std::to_string(validImageCount) + "/" + std::to_string(imagePaths.size()));
 
-    // æ£€æŸ¥æ˜¯å¦æœ‰è¶³å¤Ÿæ•°é‡çš„æœ‰æ•ˆå›¾åƒ
     if (validImageCount < 5) {
-        result.errorMessage = "æœ‰æ•ˆå›¾åƒæ•°é‡ä¸è¶³ï¼Œè‡³å°‘éœ€è¦5å¼ æœ‰æ•ˆçš„æ£‹ç›˜æ ¼å›¾åƒ";
-        updateStatus("æ ‡å®šå¤±è´¥: " + result.errorMessage);
+        result.errorMessage = "ÓĞĞ§Í¼ÏñÊıÁ¿²»×ã£¬ÖÁÉÙĞèÒª5ÕÅÓĞĞ§µÄÆåÅÌ¸ñÍ¼Ïñ";
+        updateStatus("±ê¶¨Ê§°Ü: " + result.errorMessage);
         return result;
     }
 
-    // æ£€æŸ¥æ˜¯å¦æˆåŠŸè·å–å›¾åƒå°ºå¯¸
     if (imageSize.width == 0) {
-        result.errorMessage = "æ— æ³•ç¡®å®šå›¾åƒå°ºå¯¸";
-        updateStatus("æ ‡å®šå¤±è´¥: " + result.errorMessage);
+        result.errorMessage = "ÎŞ·¨È·¶¨Í¼Ïñ³ß´ç";
+        updateStatus("±ê¶¨Ê§°Ü: " + result.errorMessage);
         return result;
     }
 
-    // 2. è®¡ç®—ç›¸æœºå†…å‚çŸ©é˜µ K
-    updateStatus("è®¡ç®—ç›¸æœºå†…å‚çŸ©é˜µ K...");
+    // 2. ¼ÆËãÏà»úÄÚ²Î¾ØÕó K
+    updateStatus("¼ÆËãÏà»úÄÚ²Î¾ØÕó K...");
     std::vector<cv::Mat> Ks;
     if (!computeCameraIntrinsics(objectPoints, imagePoints, imageSize, Ks)) {
-        result.errorMessage = "è®¡ç®—ç›¸æœºå†…å‚çŸ©é˜µå¤±è´¥";
-        updateStatus("æ ‡å®šå¤±è´¥: " + result.errorMessage);
+        result.errorMessage = "¼ÆËãÏà»úÄÚ²Î¾ØÕóÊ§°Ü";
+        updateStatus("±ê¶¨Ê§°Ü: " + result.errorMessage);
         return result;
     }
 
-    // 3. è®¡ç®—ç•¸å˜å‚æ•°
-    updateStatus("è®¡ç®—ç•¸å˜å‚æ•°...");
+    // 3. ¼ÆËã»û±ä²ÎÊı
+    updateStatus("¼ÆËã»û±ä²ÎÊı...");
     cv::Mat distCoeffs;
     double reprojectionError = 0.0;
     if (!computeDistortionCoefficients(objectPoints, imagePoints, imageSize, Ks[0],
         distCoeffs, reprojectionError)) {
-        result.errorMessage = "è®¡ç®—ç•¸å˜å‚æ•°å¤±è´¥";
-        updateStatus("æ ‡å®šå¤±è´¥: " + result.errorMessage);
+        result.errorMessage = "¼ÆËã»û±ä²ÎÊıÊ§°Ü";
+        updateStatus("±ê¶¨Ê§°Ü: " + result.errorMessage);
         return result;
     }
 
-    // 4. éªŒè¯æ ‡å®šç»“æœ
+    // 4. ÑéÖ¤±ê¶¨½á¹û
     if (validateCalibration(Ks[0], distCoeffs, reprojectionError)) {
         result.success = true;
         result.Ks = Ks;
         result.distCoeffs = distCoeffs;
         result.reprojectionError = reprojectionError;
 
-        // è®¡ç®—å¹¶æ˜¾ç¤ºæ ‡å®šè€—æ—¶
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 
-        updateStatus("ç›¸æœºæ ‡å®šæˆåŠŸå®Œæˆ! é‡æŠ•å½±è¯¯å·®: " +
-            std::to_string(reprojectionError) + " åƒç´ , è€—æ—¶: " +
+        updateStatus("Ïà»ú±ê¶¨³É¹¦Íê³É! ÖØÍ¶Ó°Îó²î: " +
+            std::to_string(reprojectionError) + " ÏñËØ, ºÄÊ±: " +
             std::to_string(duration.count()) + "ms");
     }
     else {
-        result.errorMessage = "æ ‡å®šç»“æœéªŒè¯å¤±è´¥";
-        updateStatus("æ ‡å®šå¤±è´¥: " + result.errorMessage);
+        result.errorMessage = "±ê¶¨½á¹ûÑéÖ¤Ê§°Ü";
+        updateStatus("±ê¶¨Ê§°Ü: " + result.errorMessage);
     }
 
     return result;
 }
 
-// è®¡ç®—ç›¸æœºå†…å‚çŸ©é˜µ
 bool MonoCameraCalibrator::computeCameraIntrinsics(const std::vector<std::vector<cv::Point3f>>& objectPoints,
     const std::vector<std::vector<cv::Point2f>>& imagePoints,
     cv::Size imageSize, std::vector<cv::Mat>& Ks) {
-    // åˆå§‹åŒ–ç›¸æœºçŸ©é˜µä¸ºå•ä½çŸ©é˜µ
+    // ³õÊ¼»¯Ïà»ú¾ØÕó
     cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
 
-    // åˆå§‹åŒ–ç•¸å˜ç³»æ•°å’Œæ—‹è½¬/å¹³ç§»å‘é‡
+    // Ê¹ÓÃOpenCVµÄ±ê¶¨º¯Êı¼ÆËãÄÚ²Î
     cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
     std::vector<cv::Mat> rvecs, tvecs;
 
-    // ä½¿ç”¨OpenCVçš„calibrateCameraå‡½æ•°è®¡ç®—å†…å‚
     double reprojectionError = cv::calibrateCamera(
         objectPoints, imagePoints, imageSize,
         cameraMatrix, distCoeffs,
         rvecs, tvecs,
-        cv::CALIB_FIX_ASPECT_RATIO |  // å›ºå®šå®½é«˜æ¯”
-        cv::CALIB_ZERO_TANGENT_DIST | // å¿½ç•¥åˆ‡å‘ç•¸å˜
-        cv::CALIB_FIX_K3              // å›ºå®šk3ç•¸å˜ç³»æ•°
+        cv::CALIB_FIX_ASPECT_RATIO |
+        cv::CALIB_ZERO_TANGENT_DIST |
+        cv::CALIB_FIX_K3
     );
 
-    // æ£€æŸ¥å†…å‚çŸ©é˜µçš„æœ‰æ•ˆæ€§
+    // ¼ì²éÄÚ²Î¾ØÕóµÄÓĞĞ§ĞÔ
     if (cameraMatrix.empty() || cameraMatrix.at<double>(0, 0) <= 0) {
-        updateStatus("é”™è¯¯: è®¡ç®—çš„å†…å‚çŸ©é˜µæ— æ•ˆ");
+        updateStatus("´íÎó: ¼ÆËãµÄÄÚ²Î¾ØÕóÎŞĞ§");
         return false;
     }
 
-    // å°†å†…å‚çŸ©é˜µæ·»åŠ åˆ°ç»“æœå‘é‡ä¸­
+    // ½«ÄÚ²Î¾ØÕóÌí¼Óµ½½á¹ûÏòÁ¿ÖĞ
     Ks.clear();
     Ks.push_back(cameraMatrix);
 
-    // æ‰“å°å†…å‚çŸ©é˜µçš„å…³é”®å‚æ•°
-    updateStatus("ç›¸æœºå†…å‚çŸ©é˜µè®¡ç®—æˆåŠŸ");
-    updateStatus("ç„¦è· fx: " + std::to_string(cameraMatrix.at<double>(0, 0)));
-    updateStatus("ç„¦è· fy: " + std::to_string(cameraMatrix.at<double>(1, 1)));
-    updateStatus("ä¸»ç‚¹ cx: " + std::to_string(cameraMatrix.at<double>(0, 2)));
-    updateStatus("ä¸»ç‚¹ cy: " + std::to_string(cameraMatrix.at<double>(1, 2)));
+    updateStatus("Ïà»úÄÚ²Î¾ØÕó¼ÆËã³É¹¦");
+    updateStatus("½¹¾à fx: " + std::to_string(cameraMatrix.at<double>(0, 0)));
+    updateStatus("½¹¾à fy: " + std::to_string(cameraMatrix.at<double>(1, 1)));
+    updateStatus("Ö÷µã cx: " + std::to_string(cameraMatrix.at<double>(0, 2)));
+    updateStatus("Ö÷µã cy: " + std::to_string(cameraMatrix.at<double>(1, 2)));
 
     return true;
 }
 
-// è®¡ç®—ç•¸å˜å‚æ•°
 bool MonoCameraCalibrator::computeDistortionCoefficients(const std::vector<std::vector<cv::Point3f>>& objectPoints,
     const std::vector<std::vector<cv::Point2f>>& imagePoints,
     cv::Size imageSize, const cv::Mat& cameraMatrix,
     cv::Mat& distCoeffs, double& reprojectionError) {
-    // åˆå§‹åŒ–ç•¸å˜ç³»æ•°
+    // ³õÊ¼»¯»û±äÏµÊı
     distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
 
-    // ä½¿ç”¨OpenCVçš„calibrateCameraå‡½æ•°è®¡ç®—ç•¸å˜å‚æ•°
+    // Ê¹ÓÃOpenCVµÄ±ê¶¨º¯Êı¼ÆËã»û±ä²ÎÊı
     std::vector<cv::Mat> rvecs, tvecs;
 
     reprojectionError = cv::calibrateCamera(
         objectPoints, imagePoints, imageSize,
         const_cast<cv::Mat&>(cameraMatrix), distCoeffs,
         rvecs, tvecs,
-        cv::CALIB_USE_INTRINSIC_GUESS | // ä½¿ç”¨å·²çŸ¥å†…å‚ä½œä¸ºåˆå§‹å€¼
-        cv::CALIB_FIX_ASPECT_RATIO |    // å›ºå®šå®½é«˜æ¯”
-        cv::CALIB_ZERO_TANGENT_DIST |   // å¿½ç•¥åˆ‡å‘ç•¸å˜
-        cv::CALIB_FIX_K3                // å›ºå®šk3ç•¸å˜ç³»æ•°
+        cv::CALIB_USE_INTRINSIC_GUESS |
+        cv::CALIB_FIX_ASPECT_RATIO |
+        cv::CALIB_ZERO_TANGENT_DIST |
+        cv::CALIB_FIX_K3
     );
 
-    // æ£€æŸ¥ç•¸å˜å‚æ•°çš„æœ‰æ•ˆæ€§
+    // ¼ì²é»û±ä²ÎÊıµÄÓĞĞ§ĞÔ
     if (distCoeffs.empty()) {
-        updateStatus("é”™è¯¯: è®¡ç®—çš„ç•¸å˜å‚æ•°æ— æ•ˆ");
+        updateStatus("´íÎó: ¼ÆËãµÄ»û±ä²ÎÊıÎŞĞ§");
         return false;
     }
 
-    // æ‰“å°ç•¸å˜å‚æ•°å’Œé‡æŠ•å½±è¯¯å·®
-    updateStatus("ç•¸å˜å‚æ•°è®¡ç®—æˆåŠŸ");
-    updateStatus("å¾„å‘ç•¸å˜ k1: " + std::to_string(distCoeffs.at<double>(0, 0)));
-    updateStatus("å¾„å‘ç•¸å˜ k2: " + std::to_string(distCoeffs.at<double>(0, 1)));
-    updateStatus("åˆ‡å‘ç•¸å˜ p1: " + std::to_string(distCoeffs.at<double>(0, 2)));
-    updateStatus("åˆ‡å‘ç•¸å˜ p2: " + std::to_string(distCoeffs.at<double>(0, 3)));
-    updateStatus("å¾„å‘ç•¸å˜ k3: " + std::to_string(distCoeffs.at<double>(0, 4)));
-    updateStatus("é‡æŠ•å½±è¯¯å·®: " + std::to_string(reprojectionError) + " åƒç´ ");
+    updateStatus("»û±ä²ÎÊı¼ÆËã³É¹¦");
+    updateStatus("¾¶Ïò»û±ä k1: " + std::to_string(distCoeffs.at<double>(0, 0)));
+    updateStatus("¾¶Ïò»û±ä k2: " + std::to_string(distCoeffs.at<double>(0, 1)));
+    updateStatus("ÇĞÏò»û±ä p1: " + std::to_string(distCoeffs.at<double>(0, 2)));
+    updateStatus("ÇĞÏò»û±ä p2: " + std::to_string(distCoeffs.at<double>(0, 3)));
+    updateStatus("¾¶Ïò»û±ä k3: " + std::to_string(distCoeffs.at<double>(0, 4)));
+    updateStatus("ÖØÍ¶Ó°Îó²î: " + std::to_string(reprojectionError) + " ÏñËØ");
 
     return true;
 }
 
-// åœ¨å›¾åƒä¸­æŸ¥æ‰¾æ£‹ç›˜æ ¼è§’ç‚¹
 bool MonoCameraCalibrator::findChessboardCorners(const cv::Mat& image, std::vector<cv::Point2f>& corners) {
-    // ä½¿ç”¨OpenCVçš„findChessboardCornerså‡½æ•°æ£€æµ‹è§’ç‚¹
     bool found = cv::findChessboardCorners(image, m_boardSize, corners,
         cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK);
 
     if (found) {
-        // ä½¿ç”¨äºšåƒç´ çº§è§’ç‚¹ç²¾ç¡®åŒ–æé«˜ç²¾åº¦
+        // ÑÇÏñËØ¼¶½Çµã¾«È·»¯
         cv::cornerSubPix(image, corners, cv::Size(11, 11), cv::Size(-1, -1),
             cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER, 30, 0.1));
     }
@@ -218,10 +199,8 @@ bool MonoCameraCalibrator::findChessboardCorners(const cv::Mat& image, std::vect
     return found;
 }
 
-// ç”Ÿæˆä¸–ç•Œåæ ‡ç³»ä¸­çš„æ£‹ç›˜æ ¼è§’ç‚¹åæ ‡
 void MonoCameraCalibrator::generateObjectPoints(std::vector<cv::Point3f>& objectPoints) {
     objectPoints.clear();
-    // åœ¨Z=0å¹³é¢ä¸Šç”Ÿæˆæ£‹ç›˜æ ¼è§’ç‚¹çš„3Dåæ ‡
     for (int i = 0; i < m_boardSize.height; i++) {
         for (int j = 0; j < m_boardSize.width; j++) {
             objectPoints.push_back(cv::Point3f(j * m_squareSize, i * m_squareSize, 0));
@@ -229,28 +208,24 @@ void MonoCameraCalibrator::generateObjectPoints(std::vector<cv::Point3f>& object
     }
 }
 
-// éªŒè¯æ ‡å®šç»“æœçš„åˆç†æ€§
 bool MonoCameraCalibrator::validateCalibration(const cv::Mat& cameraMatrix, const cv::Mat& distCoeffs, double reprojectionError) {
-    // éªŒè¯æ¡ä»¶ï¼šå†…å‚çŸ©é˜µéç©ºã€ç•¸å˜å‚æ•°éç©ºã€é‡æŠ•å½±è¯¯å·®å°äº2åƒç´ ã€ç„¦è·æœ‰æ•ˆ
     bool valid = !cameraMatrix.empty() &&
         !distCoeffs.empty() &&
-        reprojectionError < 2.0 &&
-        cameraMatrix.at<double>(0, 0) > 0;
+        reprojectionError < 2.0 && // ÖØÍ¶Ó°Îó²îĞ¡ÓÚ2ÏñËØ
+        cameraMatrix.at<double>(0, 0) > 0; // ½¹¾àÓĞĞ§
 
     if (!valid) {
-        updateStatus("æ ‡å®šç»“æœéªŒè¯å¤±è´¥: é‡æŠ•å½±è¯¯å·®=" +
+        updateStatus("±ê¶¨½á¹ûÑéÖ¤Ê§°Ü: ÖØÍ¶Ó°Îó²î=" +
             std::to_string(reprojectionError));
     }
 
     return valid;
 }
 
-// è·å–å½“å‰çŠ¶æ€ä¿¡æ¯
 std::string MonoCameraCalibrator::getStatus() const {
     return m_status;
 }
 
-// æ›´æ–°çŠ¶æ€ä¿¡æ¯å¹¶æ‰“å°åˆ°æ§åˆ¶å°
 void MonoCameraCalibrator::updateStatus(const std::string& message) {
     m_status = message;
     std::cout << "[CameraCalibrator] " << message << std::endl;

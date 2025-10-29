@@ -1,5 +1,6 @@
 #include"FeatureDetection.h"
 
+
 FeatureMatcher::FeatureMatcher(int nFeatures, float ratio)
     : nFeatures_(nFeatures), ratio_(ratio)
 {
