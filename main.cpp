@@ -5,6 +5,9 @@
 #include"CloudGenerate.h"
 #include"FeatureDetection.h"
 #include"CameraCalibrator.h"
+#include"StereoPipeline.h"
+#include "MultiViewStereo.h"
+#include "SparseTriangulation.h"
 using namespace std;
 using namespace cv;
 namespace fs = std::filesystem;
@@ -120,7 +123,10 @@ int main()
     // 支持的图片扩展名
     vector<string> image_extensions = { ".jpg", ".jpeg", ".png", ".bmp", ".tiff"};
 
+    fs::path absolute_path = fs::absolute(folder_path);
 
+    // 打印绝对路径（注意：可能包含平台特定的路径分隔符）
+    std::cout << "Absolute path: " << absolute_path << std::endl;
 
     // 遍历文件夹
     for (const auto& entry : fs::directory_iterator(folder_path)) {
@@ -221,6 +227,11 @@ int main()
 
 
     // 第一轮特征提取和匹配
+    if (Remaining_imageNames.size() < 2)
+    {
+        cerr << "照片数量不足" << endl;
+        return -1;
+    }
     FeatureMatcher matcher;
     vector<cv::KeyPoint> key_points_0,key_points_1;
     cv::Mat des_0,des_1;
@@ -257,29 +268,27 @@ int main()
 
     // 深度估计初步生成点云
 
+    Mat R;
+    Mat t;
+    vector<Point3d> points3D_out;
+    if (!RunTwoViewReconstruction(match_points_0, match_points_1, Ks[0], diffcoeffs, "scene.ply", R, t, points3D_out, points3D, projections2D_all, point3DIds, 1.0, 2.0))
+    {
+        cerr << "深度估计错误" << endl;
+        return -1;
+    }
+    Rs.push_back(cv::Mat::eye(3, 3, CV_64F)); 
+    ts.push_back(cv::Mat::zeros(3, 1, CV_64F));
+    Rs.push_back(R);
+    ts.push_back(t);
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    bool judge;
     // 增加点云数量
     do
     {
-        bool judge = false;
+        judge = false;
         for (int i = 0; i < Remaining_imageNames.size(); i++)
         {
             int point_num=0;// 取最大数
@@ -351,71 +360,71 @@ int main()
 
     Export_To_NVM(imageNames, Rs, ts, Ks, points3D, projections2D_all, viewIndices, images);
 
-    //string sourceImagesDir = "images"; 
-    //string targetMvsDir = "MVS";       
-    //string targetImagesDir = targetMvsDir + "/images"; 
+    string sourceImagesDir = "images"; 
+    string targetMvsDir = "MVS";       
+    string targetImagesDir = targetMvsDir + "/images"; 
 
-    //if (!fs::exists(targetMvsDir)) 
-    //{
-    //    std::cerr << "错误：MVS 文件夹不存在 - " << targetMvsDir << std::endl;
-    //    return -1;
-    //}
+    if (!fs::exists(targetMvsDir)) 
+    {
+        std::cerr << "错误：MVS 文件夹不存在 - " << targetMvsDir << std::endl;
+        return -1;
+    }
 
-    //if (!fs::exists(sourceImagesDir)) 
-    //{
-    //    std::cerr << "错误：images 文件夹不存在 - " << sourceImagesDir << std::endl;
-    //    return -1;
-    //}
+    if (!fs::exists(sourceImagesDir)) 
+    {
+        std::cerr << "错误：images 文件夹不存在 - " << sourceImagesDir << std::endl;
+        return -1;
+    }
 
-    //if (fs::exists(targetImagesDir)) 
-    //{
-    //    std::cout << "目标路径已存在 images 文件夹，将覆盖 - " << targetImagesDir << std::endl;
-    //    fs::remove_all(targetImagesDir); 
-    //}
+    if (fs::exists(targetImagesDir)) 
+    {
+        std::cout << "目标路径已存在 images 文件夹，将覆盖 - " << targetImagesDir << std::endl;
+        fs::remove_all(targetImagesDir); 
+    }
 
-    //fs::copy(sourceImagesDir, targetImagesDir, fs::copy_options::recursive);
+    fs::copy(sourceImagesDir, targetImagesDir, fs::copy_options::recursive);
 
-    //if (!EnsureLogDirectory())
-    //{
-    //    cout << "创建logs日志目录失败" << endl;
-    //    return -1;
-    //}
+    if (!EnsureLogDirectory())
+    {
+        cout << "创建logs日志目录失败" << endl;
+        return -1;
+    }
 
-    ////表面重建部分
-    //int ret = InterfaceVisualSFM();
-    //if (ret != 0)
-    //{
-    //    cerr << "生成.mvs失败，详情见 logs/InterfaceVisualSFM.log" << endl;
-    //    return -1;
-    //}
+    //表面重建部分
+    int ret = InterfaceVisualSFM();
+    if (ret != 0)
+    {
+        cerr << "生成.mvs失败，详情见 logs/InterfaceVisualSFM.log" << endl;
+        return -1;
+    }
 
-    //ret = DensifyPointCloud();
-    //if (ret != 0)
-    //{
-    //    cerr << "稠密重建失败，详情见 logs/DensifyPointCloud.log" << endl;
-    //    return -1;
-    //}
+    ret = DensifyPointCloud();
+    if (ret != 0)
+    {
+        cerr << "稠密重建失败，详情见 logs/DensifyPointCloud.log" << endl;
+        return -1;
+    }
 
-    //ret = ReconstructMesh();
-    //if (ret != 0)
-    //{
-    //    cerr << "曲面重建失败，详情见 logs/ReconstructMesh.log" << endl;
-    //    return -1;
-    //}
+    ret = ReconstructMesh();
+    if (ret != 0)
+    {
+        cerr << "曲面重建失败，详情见 logs/ReconstructMesh.log" << endl;
+        return -1;
+    }
 
-    //ret = RefineMesh();
-    //if (ret != 0)
-    //{
-    //    cerr << "网格优化失败，详情见 logs/RefineMesh.log" << endl;
-    //    return -1;
-    //}
+    ret = RefineMesh();
+    if (ret != 0)
+    {
+        cerr << "网格优化失败，详情见 logs/RefineMesh.log" << endl;
+        return -1;
+    }
 
-    //ret = TextureMesh();
-    //if (ret != 0)
-    //{
-    //    cerr << "纹理贴图失败，详情见 logs/TextureMesh.log" << endl;
-    //    return -1;
-    //}
+    ret = TextureMesh();
+    if (ret != 0)
+    {
+        cerr << "纹理贴图失败，详情见 logs/TextureMesh.log" << endl;
+        return -1;
+    }
 
 	return 0;
 }
