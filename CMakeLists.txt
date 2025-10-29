@@ -16,7 +16,7 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # 可执行文件
-add_executable(app main.cpp ${SRC} "include/CameraCalibrator.h")
+add_executable(app main.cpp ${SRC})
 target_link_libraries(app ${OpenCV_LIBS})
 
 # 获取 OpenCV 运行时 DLL 所在路径
