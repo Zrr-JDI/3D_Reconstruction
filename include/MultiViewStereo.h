@@ -5,12 +5,12 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
-// ¼ÆËã±¾ÖÊ¾ØÕó£¨Ê¹ÓÃ RANSAC£©
-// pts1, pts2: ÏñËØ×ø±ê£¨Í¬Ò»ÏñËØ×ø±êÏµ£©
-// K: Ïà»úÄÚ²Î
-// E: Êä³ö±¾ÖÊ¾ØÕó
-// inlierMask: Êä³öÄÚµãÑÚÂë (CV_8U)
-// ransacThresh: RANSAC ÖØÍ¶Ó°ãĞÖµ£¨ÏñËØ£©
+// è®¡ç®—æœ¬è´¨çŸ©é˜µï¼ˆä½¿ç”¨ RANSACï¼‰
+// pts1, pts2: åƒç´ åæ ‡ï¼ˆåŒä¸€åƒç´ åæ ‡ç³»ï¼‰
+// K: ç›¸æœºå†…å‚
+// E: è¾“å‡ºæœ¬è´¨çŸ©é˜µ
+// inlierMask: è¾“å‡ºå†…ç‚¹æ©ç  (CV_8U)
+// ransacThresh: RANSAC é‡æŠ•å½±é˜ˆå€¼ï¼ˆåƒç´ ï¼‰
 bool ComputeEssentialMatrix(const std::vector<cv::Point2d>& pts1,
                             const std::vector<cv::Point2d>& pts2,
                             const cv::Mat& K,
@@ -18,12 +18,12 @@ bool ComputeEssentialMatrix(const std::vector<cv::Point2d>& pts1,
                             cv::Mat& inlierMask,
                             double ransacThresh = 1.0);
 
-// ´Ó±¾ÖÊ¾ØÕó»Ö¸´Ïà¶Ô×ËÌ¬ R,t
-// E: ±¾ÖÊ¾ØÕó
-// pts1, pts2: ¶ÔÓ¦ÏñËØµã£¨ÓÃÓÚ recoverPose µÄÊäÈë£©
-// K: Ïà»úÄÚ²Î
-// R, t: Êä³öÏà¶ÔĞı×ªºÍÆ½ÒÆ£¨t Îªµ¥Î»ÏòÁ¿·½Ïò£©
-// inlierMask: ¿ÉÑ¡£¬recoverPose Êä³öµÄÄÚµãÑÚÂë£¨CV_8U£©
+// ä»æœ¬è´¨çŸ©é˜µæ¢å¤ç›¸å¯¹å§¿æ€ R,t
+// E: æœ¬è´¨çŸ©é˜µ
+// pts1, pts2: å¯¹åº”åƒç´ ç‚¹ï¼ˆç”¨äº recoverPose çš„è¾“å…¥ï¼‰
+// K: ç›¸æœºå†…å‚
+// R, t: è¾“å‡ºç›¸å¯¹æ—‹è½¬å’Œå¹³ç§»ï¼ˆt ä¸ºå•ä½å‘é‡æ–¹å‘ï¼‰
+// inlierMask: å¯é€‰ï¼ŒrecoverPose è¾“å‡ºçš„å†…ç‚¹æ©ç ï¼ˆCV_8Uï¼‰
 bool RecoverPoseFromEssential(const cv::Mat& E,
                               const std::vector<cv::Point2d>& pts1,
                               const std::vector<cv::Point2d>& pts2,

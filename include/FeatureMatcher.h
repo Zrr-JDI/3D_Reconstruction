@@ -7,13 +7,13 @@
 class FeatureMatcher
 {
 public:
-    // ¹¹Ôì£º¿ÉÒÔÖ¸¶¨ ORB ÌØÕ÷ÊıÓë Lowe ratio
+    // æ„é€ ï¼šå¯ä»¥æŒ‡å®š ORB ç‰¹å¾æ•°ä¸ Lowe ratio
     FeatureMatcher(int nFeatures = 4000, float ratio = 0.75f);
 
-    // ¶ÔÁ½ÕÅÍ¼Æ¬×öÌØÕ÷¼ì²â¡¢ÃèÊö×Ó¼ÆËãÓëÆ¥Åä£¨Lowe Ratio Test£©
-    // ÊäÈë£ºimg1, img2£¨²ÊÉ«»ò»Ò¶È¾ù¿É£©
-    // Êä³ö£ºkps1,kps2£¨¹Ø¼üµã£©£¬good_matches£¨¹ıÂËºóµÄÆ¥Åä£©£¬outImg£¨¿ÉÊÓ»¯Í¼Ïñ£¬Èô draw=false ÔòÎª¿Õ£©
-    // ·µ»Ø£ºÆ¥Åä³É¹¦²¢ÇÒ good_matches ·Ç¿Õ·µ»Ø true£¬·ñÔò·µ»Ø false
+    // å¯¹ä¸¤å¼ å›¾ç‰‡åšç‰¹å¾æ£€æµ‹ã€æè¿°å­è®¡ç®—ä¸åŒ¹é…ï¼ˆLowe Ratio Testï¼‰
+    // è¾“å…¥ï¼šimg1, img2ï¼ˆå½©è‰²æˆ–ç°åº¦å‡å¯ï¼‰
+    // è¾“å‡ºï¼škps1,kps2ï¼ˆå…³é”®ç‚¹ï¼‰ï¼Œgood_matchesï¼ˆè¿‡æ»¤åçš„åŒ¹é…ï¼‰ï¼ŒoutImgï¼ˆå¯è§†åŒ–å›¾åƒï¼Œè‹¥ draw=false åˆ™ä¸ºç©ºï¼‰
+    // è¿”å›ï¼šåŒ¹é…æˆåŠŸå¹¶ä¸” good_matches éç©ºè¿”å› trueï¼Œå¦åˆ™è¿”å› false
     bool matchImages(
         const cv::Mat& img1,
         const cv::Mat& img2,
@@ -23,7 +23,7 @@ public:
         cv::Mat& outImg,
         bool draw = true);
 
-    // ÉèÖÃ ratio
+    // è®¾ç½® ratio
     void setRatio(float r) { ratio_ = r; }
 
 private:

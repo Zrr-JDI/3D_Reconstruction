@@ -6,13 +6,13 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 
-// ÔÚÁ½¸öÊÓÍ¼¼äÈı½Ç»¯²¢×öÕıÉî¶È + ÖØÍ¶Ó°Îó²îÉ¸Ñ¡
-// P1, P2: 3x4 Í¶Ó°¾ØÕó£¨ÒÑ°üº¬ÄÚ²Î K£©
-// pts1, pts2: ¶ÔÓ¦µÄÏñËØ×ø±êÏòÁ¿£¨Í¬³¤¶È£©
-// points3D: Êä³öÍ¨¹ıÉ¸Ñ¡µÄÈıÎ¬µã£¨Ïà»ú1²Î¿¼Ïµ£©
-// validMask: Êä³öÓëÊäÈëµãµÈ³¤µÄ mask£¨1: ÓĞĞ§£¬0: ÎŞĞ§£©
-// reprojThreshold: ÖØÍ¶Ó°Îó²îãĞÖµ£¨ÏñËØ£©
-// ·µ»Ø true ±íÊ¾ÖÁÉÙÓĞÒ»¸öÓĞĞ§µã
+// åœ¨ä¸¤ä¸ªè§†å›¾é—´ä¸‰è§’åŒ–å¹¶åšæ­£æ·±åº¦ + é‡æŠ•å½±è¯¯å·®ç­›é€‰
+// P1, P2: 3x4 æŠ•å½±çŸ©é˜µï¼ˆå·²åŒ…å«å†…å‚ Kï¼‰
+// pts1, pts2: å¯¹åº”çš„åƒç´ åæ ‡å‘é‡ï¼ˆåŒé•¿åº¦ï¼‰
+// points3D: è¾“å‡ºé€šè¿‡ç­›é€‰çš„ä¸‰ç»´ç‚¹ï¼ˆç›¸æœº1å‚è€ƒç³»ï¼‰
+// validMask: è¾“å‡ºä¸è¾“å…¥ç‚¹ç­‰é•¿çš„ maskï¼ˆ1: æœ‰æ•ˆï¼Œ0: æ— æ•ˆï¼‰
+// reprojThreshold: é‡æŠ•å½±è¯¯å·®é˜ˆå€¼ï¼ˆåƒç´ ï¼‰
+// è¿”å› true è¡¨ç¤ºè‡³å°‘æœ‰ä¸€ä¸ªæœ‰æ•ˆç‚¹
 bool TriangulateTwoViews(const cv::Mat& P1, const cv::Mat& P2,
                          const std::vector<cv::Point2d>& pts1,
                          const std::vector<cv::Point2d>& pts2,
@@ -20,8 +20,8 @@ bool TriangulateTwoViews(const cv::Mat& P1, const cv::Mat& P2,
                          std::vector<unsigned char>& validMask,
                          double reprojThreshold = 3.0);
 
-// ½«Ï¡ÊèµãÔÆĞ´Èë ASCII PLY£¨½ö¶¥µã£©
-// ·µ»Ø true ±íÊ¾Ğ´Èë³É¹¦
+// å°†ç¨€ç–ç‚¹äº‘å†™å…¥ ASCII PLYï¼ˆä»…é¡¶ç‚¹ï¼‰
+// è¿”å› true è¡¨ç¤ºå†™å…¥æˆåŠŸ
 bool SavePointCloudPLY(const std::string& filename,
                        const std::vector<cv::Point3d>& points3D);
 

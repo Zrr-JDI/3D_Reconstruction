@@ -17,7 +17,7 @@ bool TriangulateTwoViews(const cv::Mat& P1, const cv::Mat& P2,
 
     int N = static_cast<int>(pts1.size());
 
-    // ¹¹Ôì 2xN Mat (double)
+    // æ„é€  2xN Mat (double)
     cv::Mat pts1_2xN(2, N, CV_64F), pts2_2xN(2, N, CV_64F);
     for (int i = 0; i < N; ++i) {
         pts1_2xN.at<double>(0, i) = pts1[i].x;
@@ -46,7 +46,7 @@ bool TriangulateTwoViews(const cv::Mat& P1, const cv::Mat& P2,
         double Y = points4D.at<double>(1, i) / w;
         double Z = points4D.at<double>(2, i) / w;
 
-        // Æë´ÎµãÓÃÓÚÏà»ú×ø±ê±ä»»
+        // é½æ¬¡ç‚¹ç”¨äºç›¸æœºåæ ‡å˜æ¢
         cv::Mat Xh = (cv::Mat_<double>(4,1) << X, Y, Z, 1.0);
         cv::Mat x1h = P1d * Xh;
         cv::Mat x2h = P2d * Xh;
@@ -54,7 +54,7 @@ bool TriangulateTwoViews(const cv::Mat& P1, const cv::Mat& P2,
         double z1 = x1h.at<double>(2,0);
         double z2 = x2h.at<double>(2,0);
 
-        // Éî¶È±ØĞëÎªÕı
+        // æ·±åº¦å¿…é¡»ä¸ºæ­£
         if (z1 <= 0.0 || z2 <= 0.0) {
             validMask[i] = 0;
             continue;

@@ -7,7 +7,7 @@ FeatureMatcher::FeatureMatcher(int nFeatures, float ratio)
     orb_ = cv::ORB::create(nFeatures_);
 }
 
-// ÌáÈ¡ÌØÕ÷µã + ÃèÊö×Ó
+// æå–ç‰¹å¾ç‚¹ + æè¿°å­
 bool FeatureMatcher::extractFeatures(
     const cv::Mat& img,
     std::vector<cv::KeyPoint>& keypoints,
@@ -17,7 +17,7 @@ bool FeatureMatcher::extractFeatures(
     descriptors.release();
 
     if (img.empty()) {
-        std::cerr << "[FeatureMatcher] ÊäÈëÍ¼ÏñÎª¿Õ£¡" << std::endl;
+        std::cerr << "[FeatureMatcher] è¾“å…¥å›¾åƒä¸ºç©ºï¼" << std::endl;
         return false;
     }
 
@@ -30,14 +30,14 @@ bool FeatureMatcher::extractFeatures(
     orb_->detectAndCompute(gray, cv::noArray(), keypoints, descriptors);
 
     if (keypoints.empty() || descriptors.empty()) {
-        std::cerr << "[FeatureMatcher] Î´¼ì²âµ½ÌØÕ÷µã»òÃèÊö×ÓÎª¿Õ¡£" << std::endl;
+        std::cerr << "[FeatureMatcher] æœªæ£€æµ‹åˆ°ç‰¹å¾ç‚¹æˆ–æè¿°å­ä¸ºç©ºã€‚" << std::endl;
         return false;
     }
 
     return true;
 }
 
-// Æ¥ÅäÌØÕ÷µã²¢Êä³ö¶ÔÓ¦×ø±ê£¨Point2d£©
+// åŒ¹é…ç‰¹å¾ç‚¹å¹¶è¾“å‡ºå¯¹åº”åæ ‡ï¼ˆPoint2dï¼‰
 bool FeatureMatcher::matchFeatures(
     const std::vector<cv::KeyPoint>& kps1,
     const cv::Mat& desc1,
@@ -50,11 +50,11 @@ bool FeatureMatcher::matchFeatures(
     new_match_points.clear();
 
     if (desc1.empty() || desc2.empty() || kps1.empty() || kps2.empty()) {
-        std::cerr << "[FeatureMatcher] ÊäÈëÌØÕ÷»òÃèÊö×ÓÎª¿Õ£¡" << std::endl;
+        std::cerr << "[FeatureMatcher] è¾“å…¥ç‰¹å¾æˆ–æè¿°å­ä¸ºç©ºï¼" << std::endl;
         return false;
     }
 
-    // Ê¹ÓÃ Hamming ¾àÀëµÄ±©Á¦Æ¥ÅäÆ÷£¨ÊÊºÏ ORB£©
+    // ä½¿ç”¨ Hamming è·ç¦»çš„æš´åŠ›åŒ¹é…å™¨ï¼ˆé€‚åˆ ORBï¼‰
     cv::BFMatcher matcher(cv::NORM_HAMMING);
     std::vector<std::vector<cv::DMatch>> knn_matches;
     matcher.knnMatch(desc1, desc2, knn_matches, 2);
@@ -67,7 +67,7 @@ bool FeatureMatcher::matchFeatures(
         const cv::DMatch& m2 = knn[1];
 
         if (m1.distance < ratio_ * m2.distance) {
-            // ÌáÈ¡Æ¥Åäµ½µÄ×ø±êµã
+            // æå–åŒ¹é…åˆ°çš„åæ ‡ç‚¹
             cv::Point2d p1 = kps1[m1.queryIdx].pt;
             cv::Point2d p2 = kps2[m1.trainIdx].pt;
             old_match_points.push_back(p1);
@@ -76,7 +76,7 @@ bool FeatureMatcher::matchFeatures(
     }
 
     if (old_match_points.empty() || new_match_points.empty()) {
-        std::cerr << "[FeatureMatcher] ratio test ºóÎŞÓĞĞ§Æ¥Åä¡£" << std::endl;
+        std::cerr << "[FeatureMatcher] ratio test åæ— æœ‰æ•ˆåŒ¹é…ã€‚" << std::endl;
         return false;
     }
 

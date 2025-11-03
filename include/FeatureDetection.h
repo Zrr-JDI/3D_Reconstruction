@@ -9,18 +9,18 @@
 class FeatureMatcher
 {
 public:
-    // ¹¹Ôìº¯Êı£ºÖ¸¶¨ ORB ÌØÕ÷µãÊıÁ¿Óë Lowe ratio
+    // æ„é€ å‡½æ•°ï¼šæŒ‡å®š ORB ç‰¹å¾ç‚¹æ•°é‡ä¸ Lowe ratio
     FeatureMatcher(int nFeatures = 4000, float ratio = 0.75f);
 
-    // ÌáÈ¡ÌØÕ÷µãÓëÃèÊö×Ó
+    // æå–ç‰¹å¾ç‚¹ä¸æè¿°å­
     bool extractFeatures(
         const cv::Mat& img,
         std::vector<cv::KeyPoint>& keypoints,
         cv::Mat& descriptors);
 
-    // Æ¥ÅäÁ½ÕÅÍ¼ÏñµÄÌØÕ÷£¬²¢Ö±½ÓÊä³öÆ¥Åä×ø±êµã
-    // ÊäÈë£ºÁ½ÕÅÍ¼ÏñµÄÌØÕ÷µãÓëÃèÊö×Ó
-    // Êä³ö£ºold_match_points, new_match_points£¨¶ÔÓ¦×ø±êµã£©
+    // åŒ¹é…ä¸¤å¼ å›¾åƒçš„ç‰¹å¾ï¼Œå¹¶ç›´æ¥è¾“å‡ºåŒ¹é…åæ ‡ç‚¹
+    // è¾“å…¥ï¼šä¸¤å¼ å›¾åƒçš„ç‰¹å¾ç‚¹ä¸æè¿°å­
+    // è¾“å‡ºï¼šold_match_points, new_match_pointsï¼ˆå¯¹åº”åæ ‡ç‚¹ï¼‰
     bool matchFeatures(
         const std::vector<cv::KeyPoint>& kps1,
         const cv::Mat& desc1,
@@ -29,7 +29,7 @@ public:
         std::vector<cv::Point2d>& old_match_points,
         std::vector<cv::Point2d>& new_match_points);
 
-    // ÉèÖÃ Ratio
+    // è®¾ç½® Ratio
     void setRatio(float r) { ratio_ = r; }
 
 private:

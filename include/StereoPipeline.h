@@ -8,16 +8,16 @@
 #include "MultiViewStereo.h"
 #include "SparseTriangulation.h"
 
-// ·â×°£º¶ÔÁ½ÊÓÍ¼Ö´ĞĞ E ¹À¼Æ -> »Ö¸´ R,t -> Èı½Ç»¯ -> ±£´æÏ¡ÊèµãÔÆ
-// ÊäÈë:
-//   pts1, pts2 - Á½ÕÅÍ¼ÏñÖĞµÄÆ¥ÅäÏñËØµã£¨¶ÔÓ¦Ë³Ğò£©
-//   K, distCoeffs - Ïà»úÄÚ²ÎÓë»û±ä£¨distCoeffs Ä¿Ç°Î´ÓÃÓÚÈ¥»û±ä£¬±£Áô²ÎÊıÒÔ±ãÀ©Õ¹£©
-//   outPly - Êä³ö PLY ÎÄ¼şÃû£¨ÈôÎª¿ÕÔò²»±£´æ£©
-// Êä³ö:
-//   R, t - ´ÓÊÓÍ¼1µ½ÊÓÍ¼2 µÄÏà¶ÔĞı×ªÓëÆ½ÒÆ£¨t µ¥Î»»¯·½Ïò£©
-//   points3D_out - Éú³ÉµÄÏ¡ÊèÈıÎ¬µã£¨Ïà»ú1 ²Î¿¼Ïµ£©
-// ·µ»Ø:
-//   true ±íÊ¾Õû¸öÁ÷³Ì³É¹¦²¢ÖÁÉÙ²úÉúÒ»¸ö3Dµã£¨Èô outPly ·Ç¿ÕÔòĞ´ÎÄ¼ş³É¹¦£©
+// å°è£…ï¼šå¯¹ä¸¤è§†å›¾æ‰§è¡Œ E ä¼°è®¡ -> æ¢å¤ R,t -> ä¸‰è§’åŒ– -> ä¿å­˜ç¨€ç–ç‚¹äº‘
+// è¾“å…¥:
+//   pts1, pts2 - ä¸¤å¼ å›¾åƒä¸­çš„åŒ¹é…åƒç´ ç‚¹ï¼ˆå¯¹åº”é¡ºåºï¼‰
+//   K, distCoeffs - ç›¸æœºå†…å‚ä¸ç•¸å˜ï¼ˆdistCoeffs ç›®å‰æœªç”¨äºå»ç•¸å˜ï¼Œä¿ç•™å‚æ•°ä»¥ä¾¿æ‰©å±•ï¼‰
+//   outPly - è¾“å‡º PLY æ–‡ä»¶åï¼ˆè‹¥ä¸ºç©ºåˆ™ä¸ä¿å­˜ï¼‰
+// è¾“å‡º:
+//   R, t - ä»è§†å›¾1åˆ°è§†å›¾2 çš„ç›¸å¯¹æ—‹è½¬ä¸å¹³ç§»ï¼ˆt å•ä½åŒ–æ–¹å‘ï¼‰
+//   points3D_out - ç”Ÿæˆçš„ç¨€ç–ä¸‰ç»´ç‚¹ï¼ˆç›¸æœº1 å‚è€ƒç³»ï¼‰
+// è¿”å›:
+//   true è¡¨ç¤ºæ•´ä¸ªæµç¨‹æˆåŠŸå¹¶è‡³å°‘äº§ç”Ÿä¸€ä¸ª3Dç‚¹ï¼ˆè‹¥ outPly éç©ºåˆ™å†™æ–‡ä»¶æˆåŠŸï¼‰
 bool RunTwoViewReconstruction(
     const std::vector<cv::Point2d>& pts1,
     const std::vector<cv::Point2d>& pts2,
@@ -27,9 +27,9 @@ bool RunTwoViewReconstruction(
     cv::Mat& R,
     cv::Mat& t,
     std::vector<cv::Point3d>& points3D_out,
-    std::vector<cv::Point3d>& globalPoints3D,                 // È«¾Ö3DµãÈİÆ÷
-    std::vector<std::vector<cv::Point2d>>& projections2D_all, // Ã¿¸öÏà»úµÄÍ¶Ó°µã
-    std::vector<std::vector<int>>& point3DIds,                // Ã¿¸öÍ¼ÏñÌØÕ÷µã¶ÔÓ¦µÄ3DµãID
+    std::vector<cv::Point3d>& globalPoints3D,                 // å…¨å±€3Dç‚¹å®¹å™¨
+    std::vector<std::vector<cv::Point2d>>& projections2D_all, // æ¯ä¸ªç›¸æœºçš„æŠ•å½±ç‚¹
+    std::vector<std::vector<int>>& point3DIds,                // æ¯ä¸ªå›¾åƒç‰¹å¾ç‚¹å¯¹åº”çš„3Dç‚¹ID
     double ransacThresh,
     double reprojThreshold);
 

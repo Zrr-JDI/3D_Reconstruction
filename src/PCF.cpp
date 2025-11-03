@@ -10,7 +10,7 @@ bool EnsureLogDirectory() {
     try {
         if (!fs::exists("logs")) {
             fs::create_directories("logs");
-            std::cout << "´´½¨ÈÕÖ¾Ä¿Â¼: logs" << std::endl;
+            std::cout << "åˆ›å»ºæ—¥å¿—ç›®å½•: logs" << std::endl;
         }
 
         std::vector<std::string> subDirs = {
@@ -24,15 +24,15 @@ bool EnsureLogDirectory() {
         for (const auto& dir : subDirs) {
             if (!fs::exists(dir)) {
                 fs::create_directories(dir);
-                std::cout << "´´½¨ÈÕÖ¾×ÓÄ¿Â¼: " << dir << std::endl;
+                std::cout << "åˆ›å»ºæ—¥å¿—å­ç›®å½•: " << dir << std::endl;
             }
         }
 
-        std::cout << "È·±£ËùÓÐÈÕÖ¾Ä¿Â¼´æÔÚÍê³É" << std::endl;
+        std::cout << "ç¡®ä¿æ‰€æœ‰æ—¥å¿—ç›®å½•å­˜åœ¨å®Œæˆ" << std::endl;
         return true;
     }
     catch (const fs::filesystem_error& e) {
-        std::cerr << "´´½¨ÈÕÖ¾Ä¿Â¼Ê§°Ü: " << e.what() << std::endl;
+        std::cerr << "åˆ›å»ºæ—¥å¿—ç›®å½•å¤±è´¥: " << e.what() << std::endl;
         return false;
     }
 }
@@ -46,14 +46,14 @@ void CleanCurrentDirLogs() {
         }
     }
     catch (const fs::filesystem_error& e) {
-        std::cerr << "ÇåÀíµ±Ç°Ä¿Â¼ÈÕÖ¾ÎÄ¼þÊ§°Ü: " << e.what() << std::endl;
+        std::cerr << "æ¸…ç†å½“å‰ç›®å½•æ—¥å¿—æ–‡ä»¶å¤±è´¥: " << e.what() << std::endl;
     }
 }
 
 int InterfaceVisualSFM() {
     int result = system(".\\FUNC\\InterfaceVisualSFM.exe -i .\\MVS\\scene.nvm -o .\\MVS\\scene.mvs > .\\logs\\InterfaceVisualSFM_logs\\InterfaceVisualSFM.log 2>&1");
     if (result != 0) {
-        std::cerr << "InterfaceVisualSFM Ö´ÐÐÊ§°Ü£¬¼ì²é logs/InterfaceVisualSFM_logs/InterfaceVisualSFM.log" << std::endl;
+        std::cerr << "InterfaceVisualSFM æ‰§è¡Œå¤±è´¥ï¼Œæ£€æŸ¥ logs/InterfaceVisualSFM_logs/InterfaceVisualSFM.log" << std::endl;
     }
     CleanCurrentDirLogs();
     return result;
@@ -62,7 +62,7 @@ int InterfaceVisualSFM() {
 int DensifyPointCloud() {
     int result = system(".\\FUNC\\DensifyPointCloud.exe -i .\\MVS\\scene.mvs -o .\\MVS\\scene.mvs > .\\logs\\DensifyPointCloud_logs\\DensifyPointCloud.log 2>&1");
     if (result != 0) {
-        std::cerr << "DensifyPointCloud Ö´ÐÐÊ§°Ü£¬¼ì²é logs/DensifyPointCloud_logs/DensifyPointCloud.log" << std::endl;
+        std::cerr << "DensifyPointCloud æ‰§è¡Œå¤±è´¥ï¼Œæ£€æŸ¥ logs/DensifyPointCloud_logs/DensifyPointCloud.log" << std::endl;
     }
     CleanCurrentDirLogs();
     return result;
@@ -71,7 +71,7 @@ int DensifyPointCloud() {
 int ReconstructMesh() {
     int result = system(".\\FUNC\\ReconstructMesh.exe -i .\\MVS\\scene.mvs -o .\\MVS\\scene.mvs > .\\logs\\ReconstructMesh_logs\\ReconstructMesh.log 2>&1");
     if (result != 0) {
-        std::cerr << "ReconstructMesh Ö´ÐÐÊ§°Ü£¬¼ì²é logs/ReconstructMesh_logs/ReconstructMesh.log" << std::endl;
+        std::cerr << "ReconstructMesh æ‰§è¡Œå¤±è´¥ï¼Œæ£€æŸ¥ logs/ReconstructMesh_logs/ReconstructMesh.log" << std::endl;
     }
     CleanCurrentDirLogs();
     return result;
@@ -80,7 +80,7 @@ int ReconstructMesh() {
 int RefineMesh() {
     int result = system(".\\FUNC\\RefineMesh.exe -i .\\MVS\\scene.mvs -o .\\MVS\\scene.mvs > .\\logs\\RefineMesh_logs\\RefineMesh.log 2>&1");
     if (result != 0) {
-        std::cerr << "RefineMesh Ö´ÐÐÊ§°Ü£¬¼ì²é logs/RefineMesh_logs/RefineMesh.log" << std::endl;
+        std::cerr << "RefineMesh æ‰§è¡Œå¤±è´¥ï¼Œæ£€æŸ¥ logs/RefineMesh_logs/RefineMesh.log" << std::endl;
     }
     CleanCurrentDirLogs();
     return result;
@@ -89,7 +89,7 @@ int RefineMesh() {
 int TextureMesh() {
     int result = system(".\\FUNC\\TextureMesh.exe -i .\\MVS\\scene.mvs -o .\\MVS\\scene.mvs > .\\logs\\TextureMesh_logs\\TextureMesh.log 2>&1");
     if (result != 0) {
-        std::cerr << "TextureMesh Ö´ÐÐÊ§°Ü£¬¼ì²é logs/TextureMesh_logs/TextureMesh.log" << std::endl;
+        std::cerr << "TextureMesh æ‰§è¡Œå¤±è´¥ï¼Œæ£€æŸ¥ logs/TextureMesh_logs/TextureMesh.log" << std::endl;
     }
     CleanCurrentDirLogs();
     return result;

@@ -9,7 +9,7 @@ FeatureMatcher::FeatureMatcher(int nFeatures, float ratio)
     orb_ = cv::ORB::create(nFeatures_);
 }
 
-// Ö÷Æ¥Åäº¯ÊıÊµÏÖ
+// ä¸»åŒ¹é…å‡½æ•°å®ç°
 bool FeatureMatcher::matchImages(
     const cv::Mat& img1,
     const cv::Mat& img2,
@@ -23,33 +23,33 @@ bool FeatureMatcher::matchImages(
     outImg.release();
 
     if (img1.empty() || img2.empty()) {
-        std::cerr << "[FeatureMatcher] ÊäÈëÍ¼Æ¬Îª¿Õ£¡" << std::endl;
+        std::cerr << "[FeatureMatcher] è¾“å…¥å›¾ç‰‡ä¸ºç©ºï¼" << std::endl;
         return false;
     }
 
-    // ×ª»Ò¶È£¨ORB ÒªÇóµ¥Í¨µÀ£©
+    // è½¬ç°åº¦ï¼ˆORB è¦æ±‚å•é€šé“ï¼‰
     cv::Mat gray1, gray2;
     if (img1.channels() == 3) cv::cvtColor(img1, gray1, cv::COLOR_BGR2GRAY);
     else gray1 = img1;
     if (img2.channels() == 3) cv::cvtColor(img2, gray2, cv::COLOR_BGR2GRAY);
     else gray2 = img2;
 
-    // ¼ì²â²¢¼ÆËãÃèÊö×Ó
+    // æ£€æµ‹å¹¶è®¡ç®—æè¿°å­
     cv::Mat desc1, desc2;
     orb_->detectAndCompute(gray1, cv::noArray(), kps1, desc1);
     orb_->detectAndCompute(gray2, cv::noArray(), kps2, desc2);
 
     if (desc1.empty() || desc2.empty() || kps1.empty() || kps2.empty()) {
-        std::cerr << "[FeatureMatcher] Î´ÄÜ¼ì²âµ½×ã¹»ÌØÕ÷µã»òÃèÊö×ÓÎª¿Õ¡£" << std::endl;
+        std::cerr << "[FeatureMatcher] æœªèƒ½æ£€æµ‹åˆ°è¶³å¤Ÿç‰¹å¾ç‚¹æˆ–æè¿°å­ä¸ºç©ºã€‚" << std::endl;
         return false;
     }
 
-    // BFMatcher + Hamming£¬ÒòÎª ORB Ê¹ÓÃ¶ş½øÖÆÃèÊö×Ó
+    // BFMatcher + Hammingï¼Œå› ä¸º ORB ä½¿ç”¨äºŒè¿›åˆ¶æè¿°å­
     cv::BFMatcher matcher(cv::NORM_HAMMING);
     std::vector<std::vector<cv::DMatch>> knn_matches;
-    matcher.knnMatch(desc1, desc2, knn_matches, 2); // Ã¿¸öÃèÊö×ÓÈ¡Á½¸ö×î½üÁÚ
+    matcher.knnMatch(desc1, desc2, knn_matches, 2); // æ¯ä¸ªæè¿°å­å–ä¸¤ä¸ªæœ€è¿‘é‚»
 
-    // Lowe ratio test ¹ıÂË
+    // Lowe ratio test è¿‡æ»¤
     for (size_t i = 0; i < knn_matches.size(); ++i) {
         if (knn_matches[i].size() >= 2) {
             const cv::DMatch& m1 = knn_matches[i][0];
@@ -61,13 +61,13 @@ bool FeatureMatcher::matchImages(
     }
 
     if (good_matches.empty()) {
-        std::cerr << "[FeatureMatcher] ¾­¹ı ratio test ºóÎŞÆ¥Åä¡£" << std::endl;
+        std::cerr << "[FeatureMatcher] ç»è¿‡ ratio test åæ— åŒ¹é…ã€‚" << std::endl;
         return false;
     }
 
-    // ¿ÉÊÓ»¯Æ¥Åä£¨Ê¹ÓÃ OpenCV µÄ drawMatches£¬ÑÕÉ«ÎªÄ¬ÈÏËæ»úÅäÉ«£©
+    // å¯è§†åŒ–åŒ¹é…ï¼ˆä½¿ç”¨ OpenCV çš„ drawMatchesï¼Œé¢œè‰²ä¸ºé»˜è®¤éšæœºé…è‰²ï¼‰
     if (draw) {
-        // ÎªÁË¿´µÃ¸üÇå³ş£¬»­³öÆ¥ÅäÏß²¢ÏÔÊ¾¹Ø¼üµã
+        // ä¸ºäº†çœ‹å¾—æ›´æ¸…æ¥šï¼Œç”»å‡ºåŒ¹é…çº¿å¹¶æ˜¾ç¤ºå…³é”®ç‚¹
         cv::drawMatches(img1, kps1, img2, kps2, good_matches, outImg,
             cv::Scalar::all(-1), cv::Scalar::all(-1),
             std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);

@@ -21,7 +21,7 @@ bool ComputeEssentialMatrix(const std::vector<cv::Point2d>& pts1,
         p2f.emplace_back(static_cast<float>(pts2[i].x), static_cast<float>(pts2[i].y));
     }
 
-    // findEssentialMat »á·µ»Ø 3x3 ¾ØÕó»ò¶à½â£¨ÔÚ·Ö¿éÇé¿öÏÂ£©£¬²¢Ğ´ÈëÑÚÂë
+    // findEssentialMat ä¼šè¿”å› 3x3 çŸ©é˜µæˆ–å¤šè§£ï¼ˆåœ¨åˆ†å—æƒ…å†µä¸‹ï¼‰ï¼Œå¹¶å†™å…¥æ©ç 
     E = cv::findEssentialMat(p1f, p2f, K, cv::RANSAC, 0.999, ransacThresh, inlierMask);
 
     return !E.empty();
@@ -45,7 +45,7 @@ bool RecoverPoseFromEssential(const cv::Mat& E,
         p2f.emplace_back(static_cast<float>(pts2[i].x), static_cast<float>(pts2[i].y));
     }
 
-    // recoverPose »áÊä³ö R, t£¨t µ¥Î»»¯£©²¢·µ»ØÄÚµãÊı£¬Í¬Ê±¿ÉĞ´ÈëÑÚÂë
+    // recoverPose ä¼šè¾“å‡º R, tï¼ˆt å•ä½åŒ–ï¼‰å¹¶è¿”å›å†…ç‚¹æ•°ï¼ŒåŒæ—¶å¯å†™å…¥æ©ç 
     int inliers = cv::recoverPose(E, p1f, p2f, K, R, t, inlierMask);
     return inliers > 0;
 }

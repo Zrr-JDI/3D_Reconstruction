@@ -10,27 +10,27 @@ bool RunTwoViewReconstruction(
     cv::Mat& R,
     cv::Mat& t,
     std::vector<cv::Point3d>& points3D_out,
-    std::vector<cv::Point3d>& globalPoints3D,                 // È«¾Ö3DµãÈİÆ÷
-    std::vector<std::vector<cv::Point2d>>& projections2D_all, // Ã¿¸öÏà»úµÄÍ¶Ó°µã
-    std::vector<std::vector<int>>& point3DIds,                // Ã¿¸öÍ¼ÏñÌØÕ÷µã¶ÔÓ¦µÄ3DµãID
+    std::vector<cv::Point3d>& globalPoints3D,                 // å…¨å±€3Dç‚¹å®¹å™¨
+    std::vector<std::vector<cv::Point2d>>& projections2D_all, // æ¯ä¸ªç›¸æœºçš„æŠ•å½±ç‚¹
+    std::vector<std::vector<int>>& point3DIds,                // æ¯ä¸ªå›¾åƒç‰¹å¾ç‚¹å¯¹åº”çš„3Dç‚¹ID
     double ransacThresh,
     double reprojThreshold)
 {
     points3D_out.clear();
 
     if (pts1.size() < 5 || pts2.size() < 5 || pts1.size() != pts2.size()) {
-        std::cerr << "ÊäÈëÆ¥Åäµã²»×ã»ò³¤¶È²»Ò»ÖÂ¡£" << std::endl;
+        std::cerr << "è¾“å…¥åŒ¹é…ç‚¹ä¸è¶³æˆ–é•¿åº¦ä¸ä¸€è‡´ã€‚" << std::endl;
         return false;
     }
 
-    // 1) ¼ÆËã±¾ÖÊ¾ØÕó
+    // 1) è®¡ç®—æœ¬è´¨çŸ©é˜µ
     cv::Mat E, essentialMask;
     if (!ComputeEssentialMatrix(pts1, pts2, K, E, essentialMask, ransacThresh)) {
-        std::cerr << "ComputeEssentialMatrix Ê§°Ü¡£" << std::endl;
+        std::cerr << "ComputeEssentialMatrix å¤±è´¥ã€‚" << std::endl;
         return false;
     }
 
-    // ½ö±£ÁôÄÚµã
+    // ä»…ä¿ç•™å†…ç‚¹
     std::vector<cv::Point2d> e_pts1, e_pts2;
     for (size_t i = 0; i < pts1.size(); ++i) {
         if (!essentialMask.empty() && essentialMask.at<uchar>((int)i) == 0) continue;
@@ -39,18 +39,18 @@ bool RunTwoViewReconstruction(
     }
 
     if (e_pts1.size() < 5) {
-        std::cerr << "Essential ÄÚµã¹ıÉÙ£º" << e_pts1.size() << std::endl;
+        std::cerr << "Essential å†…ç‚¹è¿‡å°‘ï¼š" << e_pts1.size() << std::endl;
         return false;
     }
 
-    // 2) ´Ó E »Ö¸´Ïà¶ÔÎ»×Ë 
+    // 2) ä» E æ¢å¤ç›¸å¯¹ä½å§¿ 
     cv::Mat recoverMask;
     if (!RecoverPoseFromEssential(E, e_pts1, e_pts2, K, R, t, recoverMask)) {
-        std::cerr << "RecoverPoseFromEssential Ê§°Ü¡£" << std::endl;
+        std::cerr << "RecoverPoseFromEssential å¤±è´¥ã€‚" << std::endl;
         return false;
     }
 
-    // ½ö±£Áô pose ÄÚµã
+    // ä»…ä¿ç•™ pose å†…ç‚¹
     std::vector<cv::Point2d> tri_pts1, tri_pts2;
     for (size_t i = 0; i < e_pts1.size(); ++i) {
         if (!recoverMask.empty() && recoverMask.at<uchar>((int)i) == 0) continue;
@@ -59,11 +59,11 @@ bool RunTwoViewReconstruction(
     }
 
     if (tri_pts1.size() < 2) {
-        std::cerr << "ÓÃÓÚÈı½Ç»¯µÄÄÚµã¹ıÉÙ£º" << tri_pts1.size() << std::endl;
+        std::cerr << "ç”¨äºä¸‰è§’åŒ–çš„å†…ç‚¹è¿‡å°‘ï¼š" << tri_pts1.size() << std::endl;
         return false;
     }
 
-    // 3) ¹¹½¨Í¶Ó°¾ØÕó P1, P2 
+    // 3) æ„å»ºæŠ•å½±çŸ©é˜µ P1, P2 
     cv::Mat I = cv::Mat::eye(3, 3, CV_64F);
     cv::Mat zero = cv::Mat::zeros(3, 1, CV_64F);
     cv::Mat P1, P2;
@@ -74,21 +74,21 @@ bool RunTwoViewReconstruction(
     t.convertTo(t64, CV_64F);
     cv::hconcat(R64, t64, P2); P2 = K * P2;
 
-    // 4) Èı½Ç»¯ 
+    // 4) ä¸‰è§’åŒ– 
     std::vector<unsigned char> validMask;
     std::vector<cv::Point3d> triPoints;
     if (!TriangulateTwoViews(P1, P2, tri_pts1, tri_pts2, triPoints, validMask, reprojThreshold)) {
-        std::cerr << "TriangulateTwoViews Î´²úÉúÓĞĞ§µã¡£" << std::endl;
+        std::cerr << "TriangulateTwoViews æœªäº§ç”Ÿæœ‰æ•ˆç‚¹ã€‚" << std::endl;
         return false;
     }
 
     points3D_out = triPoints;
 
-    // 5) ±£´æÈ«¾ÖÊı¾İ 
+    // 5) ä¿å­˜å…¨å±€æ•°æ® 
     int baseIdx = (int)globalPoints3D.size();
     globalPoints3D.insert(globalPoints3D.end(), triPoints.begin(), triPoints.end());
 
-    // projections2D_all[0] ¶ÔÓ¦Ïà»ú1£¬ projections2D_all[1] ¶ÔÓ¦Ïà»ú2
+    // projections2D_all[0] å¯¹åº”ç›¸æœº1ï¼Œ projections2D_all[1] å¯¹åº”ç›¸æœº2
     if (projections2D_all.size() < 2) {
         projections2D_all.resize(2);
         point3DIds.resize(2);
@@ -101,10 +101,10 @@ bool RunTwoViewReconstruction(
         point3DIds[1].push_back(baseIdx + (int)i);
     }
 
-    // 6) ±£´æPLY 
+    // 6) ä¿å­˜PLY 
     if (!outPly.empty()) {
         if (!SavePointCloudPLY(outPly, points3D_out)) {
-            std::cerr << "SavePointCloudPLY ±£´æÊ§°Ü£º" << outPly << std::endl;
+            std::cerr << "SavePointCloudPLY ä¿å­˜å¤±è´¥ï¼š" << outPly << std::endl;
             return false;
         }
     }
